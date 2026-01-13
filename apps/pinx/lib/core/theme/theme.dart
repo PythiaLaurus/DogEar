@@ -167,7 +167,7 @@ class PlatformBrightness extends _$PlatformBrightness
 
     _followSystemForOnce();
     WidgetsBinding.instance.addObserver(this);
-    Storage.setString(_kThemeMode, ThemeMode.system.name);
+    appStorage.setString(_kThemeMode, ThemeMode.system.name);
   }
 
   /// Set PlatformBrightness. Only works when not following system.
@@ -216,14 +216,14 @@ class PlatformBrightness extends _$PlatformBrightness
   }
 
   Future<void> _init() async {
-    final defaultThemeMode = await Storage.getString(_kThemeMode);
+    final defaultThemeMode = await appStorage.getString(_kThemeMode);
     if (defaultThemeMode == null) return;
 
     late final ThemeMode themeMode;
     try {
       themeMode = ThemeMode.values.byName(defaultThemeMode);
     } catch (_) {
-      Storage.setString(_kThemeMode, ThemeMode.system.name);
+      appStorage.setString(_kThemeMode, ThemeMode.system.name);
       themeMode = ThemeMode.system;
     }
 
@@ -248,7 +248,7 @@ class PlatformBrightness extends _$PlatformBrightness
     if (brightness == state) return;
 
     state = brightness;
-    Storage.setString(_kThemeMode, brightness.name);
+    appStorage.setString(_kThemeMode, brightness.name);
   }
 }
 

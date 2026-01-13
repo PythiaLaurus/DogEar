@@ -6,11 +6,14 @@ import 'package:window_manager/window_manager.dart';
 import '../../configs/tray_config.dart';
 
 class AppTray {
+  AppTray._();
+  static final instance = AppTray._();
+
   static const String iconPath = 'assets/system/tray.ico';
 
-  static bool get isInitialized => trayManager.hasListeners;
+  bool get isInitialized => trayManager.hasListeners;
 
-  static Future<void> initSystemTray() async {
+  Future<void> initSystemTray() async {
     // Set the system tray icon
     await trayManager.setIcon(iconPath);
 
@@ -29,11 +32,11 @@ class AppTray {
     trayManager.addListener(SystemTrayListener());
   }
 
-  static void hideTray() async {
+  void hideTray() async {
     await trayManager.destroy();
   }
 
-  static void showTray() async {
+  void showTray() async {
     await trayManager.setIcon(iconPath);
   }
 }
@@ -57,3 +60,5 @@ class SystemTrayListener with TrayListener {
     }
   }
 }
+
+final appTray = AppTray.instance;

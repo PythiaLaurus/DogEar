@@ -1,41 +1,39 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class Storage {
-  static SharedPreferencesAsync? _prefs;
+class AppStorage {
+  AppStorage._();
+  static final instance = AppStorage._();
 
-  static SharedPreferencesAsync get _instance {
-    _prefs ??= SharedPreferencesAsync();
-    return _prefs!;
-  }
+  final SharedPreferencesAsync _prefs = SharedPreferencesAsync();
 
   /// Set string
-  static Future<void> setString(String key, String value) async {
-    await _instance.setString(key, value);
+  Future<void> setString(String key, String value) async {
+    await _prefs.setString(key, value);
   }
 
   /// Get string
-  static Future<String?> getString(String key) async {
-    return await _instance.getString(key);
+  Future<String?> getString(String key) async {
+    return await _prefs.getString(key);
   }
 
   /// Set int
-  static Future<void> setInt(String key, int value) async {
-    await _instance.setInt(key, value);
+  Future<void> setInt(String key, int value) async {
+    await _prefs.setInt(key, value);
   }
 
   /// Get int
-  static Future<int?> getInt(String key) async {
-    return await _instance.getInt(key);
+  Future<int?> getInt(String key) async {
+    return await _prefs.getInt(key);
   }
 
-  static Future<void> setJson(String key, dynamic value) async {
-    await _instance.setString(key, json.encode(value));
+  Future<void> setJson(String key, dynamic value) async {
+    await _prefs.setString(key, json.encode(value));
   }
 
-  static dynamic getJson(String key) async {
+  dynamic getJson(String key) async {
     try {
-      String? tempData = await _instance.getString(key);
+      String? tempData = await _prefs.getString(key);
       if (tempData != null) {
         return json.decode(tempData);
       } else {
@@ -46,11 +44,13 @@ class Storage {
     }
   }
 
-  static void removeData(String key) {
-    _instance.remove(key);
+  void removeData(String key) {
+    _prefs.remove(key);
   }
 
-  static void clearData(Set<String>? allowList) {
-    _instance.clear(allowList: allowList);
+  void clearData(Set<String>? allowList) {
+    _prefs.clear(allowList: allowList);
   }
 }
+
+final appStorage = AppStorage.instance;

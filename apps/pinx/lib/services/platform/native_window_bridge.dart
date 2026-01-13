@@ -5,58 +5,48 @@ import 'package:flutter/material.dart' show debugPrint;
 import 'package:win32/win32.dart';
 
 class NativeWindowBridge {
+  NativeWindowBridge._();
+  static final instance = NativeWindowBridge._();
+
   // Get the handle of the foreground window
-  static int get _foregroundWindowHandle => GetForegroundWindow();
-
-  /// Get the handle of the foreground window.
-  /// Only the root window is returned.
-  /// Return 0 if no window is active.
-  static int getForegroundWindowHandle() {
-    final hwnd = _foregroundWindowHandle;
-    if (hwnd == 0) return 0;
-
-    var candidate = hwnd;
-
-    final root = GetAncestor(candidate, GA_ROOT);
-    if (root != 0) candidate = root;
-
-    final rootOwner = GetAncestor(candidate, GA_ROOTOWNER);
-    if (rootOwner != 0) candidate = rootOwner;
-
-    return candidate;
-  }
+  int get _foregroundWindowHandle => GetForegroundWindow();
 
   /// Toggle Foreground Window Topmost.
   /// Returns (hwnd, shouldTopmost, isSuccess).<br>
   /// hwnd: The handle of the window.<br>
   /// shouldTopmost: true if the window should be topmost, false otherwise.<br>
   /// isSuccess: true if the window was successfully toggled, false otherwise.
-  static (int, bool, bool) toggleForegroundWindowTopmost() {
+  ({int hwnd, bool shouldTopmost, bool isSuccess})
+  toggleForegroundWindowTopmost() {
     final hwnd = getForegroundWindowHandle();
 
     if (hwnd == 0) {
-      return (0, false, false);
+      return (hwnd: 0, shouldTopmost: false, isSuccess: false);
     }
 
-    final (shouldTopmost, isSuccess) = toggleTopmost(hwnd);
+    final result = toggleTopmost(hwnd);
 
-    return (hwnd, shouldTopmost, isSuccess);
+    return (
+      hwnd: hwnd,
+      shouldTopmost: result.shouldTopmost,
+      isSuccess: result.isSuccess,
+    );
   }
 
   /// Toggle Topmost.
   /// Returns (shouldTopmost, isSuccess).<br>
   /// shouldTopmost: true if the window should be topmost, false otherwise.<br>
   /// isSuccess: true if the window was successfully toggled, false otherwise.
-  static (bool, bool) toggleTopmost(int hwnd) {
+  ({bool shouldTopmost, bool isSuccess}) toggleTopmost(int hwnd) {
     final shouldTopmost = !isTopmost(hwnd);
     final isSuccess = setTopmost(hwnd, topmost: shouldTopmost);
 
-    return (shouldTopmost, isSuccess);
+    return (shouldTopmost: shouldTopmost, isSuccess: isSuccess);
   }
 
   /// Set or cancel the topmost state of a window.
   /// Returns true if the window was successfully set or canceled as topmost.
-  static bool setTopmost(int hwnd, {bool topmost = true}) {
+  bool setTopmost(int hwnd, {bool topmost = true}) {
     final insertAfter = topmost ? HWND_TOPMOST : HWND_NOTOPMOST;
     final flags = SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE;
 
@@ -72,13 +62,46 @@ class NativeWindowBridge {
   }
 
   /// Returns true if the window is topmost.
-  static bool isTopmost(int hwnd) {
+  bool isTopmost(int hwnd) {
     final exStyle = GetWindowLongPtr(hwnd, GWL_EXSTYLE);
 
     return (exStyle & WS_EX_TOPMOST) == WS_EX_TOPMOST;
   }
 
-  static void _log(String functionName, int errorCode) {
+  /// Get the handle of the foreground window.
+  /// Only the root window is returned.
+  /// Return 0 if no window is active.
+  int getForegroundWindowHandle() {
+    final hwnd = _foregroundWindowHandle;
+    if (hwnd == 0) return 0;
+
+    var candidate = hwnd;
+
+    final root = GetAncestor(candidate, GA_ROOT);
+    if (root != 0) candidate = root;
+
+    final rootOwner = GetAncestor(candidate, GA_ROOTOWNER);
+    if (rootOwner != 0) candidate = rootOwner;
+
+    return candidate;
+  }
+
+  /// Returns the handle to the module containing the specified function.
+  /// [lpModuleName] is the name of the module to be retrieved.
+  /// If [lpModuleName] is null, the handle of the calling module is returned.
+  int getModuleHandle(String? lpModuleName) {
+    if (lpModuleName == null) return GetModuleHandle(nullptr);
+
+    final name = lpModuleName.toNativeUtf16();
+
+    try {
+      return GetModuleHandle(name);
+    } finally {
+      calloc.free(name);
+    }
+  }
+
+  void _log(String functionName, int errorCode) {
     assert(() {
       final formatted = _formatError(errorCode);
       debugPrint(
@@ -88,7 +111,7 @@ class NativeWindowBridge {
     }());
   }
 
-  static String _formatError(int errorCode) {
+  String _formatError(int errorCode) {
     final buffer = calloc<Pointer<Utf16>>();
     const flags =
         FORMAT_MESSAGE_ALLOCATE_BUFFER |
@@ -117,3 +140,5 @@ class NativeWindowBridge {
     return message;
   }
 }
+
+final nativeWindowBridge = NativeWindowBridge.instance;

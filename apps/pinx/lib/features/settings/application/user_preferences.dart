@@ -15,7 +15,7 @@ class UserPreferences extends _$UserPreferences {
 
   @override
   FutureOr<UserPreferencesModel> build() async {
-    final savedPrefsJson = await Storage.getJson(_kStorage);
+    final savedPrefsJson = await appStorage.getJson(_kStorage);
 
     if (savedPrefsJson != null) {
       final savedPrefs = UserPreferencesModel.fromJson(savedPrefsJson);
@@ -54,7 +54,7 @@ class UserPreferences extends _$UserPreferences {
     final newHotkeyBinding = HotkeyBinding(
       hotKey: newKey,
       keyDownHandler: (hotkey) {
-        NativeWindowBridge.toggleForegroundWindowTopmost();
+        nativeWindowBridge.toggleForegroundWindowTopmost();
       },
     );
     AppHotKeys.register(newHotkeyBinding);
@@ -103,7 +103,7 @@ class UserPreferences extends _$UserPreferences {
   }
 
   void _applyShowTrayIcon(bool newValue) {
-    newValue ? AppTray.showTray() : AppTray.hideTray();
+    newValue ? appTray.showTray() : appTray.hideTray();
   }
 
   /// Reset All User Preferences
@@ -116,7 +116,7 @@ class UserPreferences extends _$UserPreferences {
   /// Save All User Preferences
   void _saveUserPrefs(UserPreferencesModel newPrefs) {
     state = AsyncValue.data(newPrefs);
-    Storage.setJson(_kStorage, newPrefs.toJson());
+    appStorage.setJson(_kStorage, newPrefs.toJson());
   }
 
   /// Apply All User Preferences
@@ -131,8 +131,8 @@ class UserPreferences extends _$UserPreferences {
 
   // Check if tray is Initialized and initialize it if not
   Future<void> _initTray() async {
-    if (!AppTray.isInitialized) {
-      await AppTray.initSystemTray();
+    if (!appTray.isInitialized) {
+      await appTray.initSystemTray();
     }
   }
 }
