@@ -98,7 +98,7 @@ class _UserPreferencesBodyState extends ConsumerState<UserPreferencesBody> {
               ),
             ],
           ),
-          contentPadding: EdgeInsets.fromLTRB(30, 20, 30, 20),
+          contentPadding: EdgeInsets.fromLTRB(20, 4, 20, 20),
           content: SingleChildScrollView(
             child: ProColorPicker(
               pickerColor: Color(colorSelectedARGB),

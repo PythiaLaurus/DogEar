@@ -78,7 +78,13 @@ class _ProColorPickerState extends ConsumerState<ProColorPicker> {
             onHSVColorChanged: _onHsvChanged,
           ),
 
-          ColorPreviewEditor(color: color, onColorChanged: _onColorChanged),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: ColorPreviewEditor(
+              color: color,
+              onColorChanged: _onColorChanged,
+            ),
+          ),
         ],
       ),
     );
