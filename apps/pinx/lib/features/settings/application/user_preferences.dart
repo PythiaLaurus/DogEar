@@ -3,6 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../core/hotkeys/hotkeys.dart';
 import '../../../core/storage/storage.dart';
+import '../../../services/platform/native_window_bridge.dart';
 import '../../../services/platform/tray.dart';
 import '../domain/user_preferences_model.dart';
 
@@ -53,7 +54,7 @@ class UserPreferences extends _$UserPreferences {
     final newHotkeyBinding = HotkeyBinding(
       hotKey: newKey,
       keyDownHandler: (hotkey) {
-        print("Key down: ${hotkey.modifiers} -- ${hotkey.key.keyLabel}");
+        NativeWindowBridge.toggleForegroundWindowTopmost();
       },
     );
     AppHotKeys.register(newHotkeyBinding);
