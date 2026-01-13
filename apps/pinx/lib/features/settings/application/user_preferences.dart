@@ -119,10 +119,19 @@ class UserPreferences extends _$UserPreferences {
   }
 
   /// Apply All User Preferences
-  void _applyAll(UserPreferencesModel prefs) {
+  Future<void> _applyAll(UserPreferencesModel prefs) async {
     _applyShortcut(prefs.shortcut);
     _applyDogEarColor(prefs.dogEarColorARGB);
     // _applyCloseToTray(prefs.closeToTray);
+
+    await _initTray();
     _applyShowTrayIcon(prefs.showTrayIcon);
+  }
+
+  // Check if tray is Initialized and initialize it if not
+  Future<void> _initTray() async {
+    if (!AppTray.isInitialized) {
+      await AppTray.initSystemTray();
+    }
   }
 }

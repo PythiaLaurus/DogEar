@@ -44,8 +44,6 @@ void main() async {
     await windowManager.setAsFrameless();
     await windowManager.show();
     await windowManager.focus();
-
-    await AppTray.initSystemTray();
   });
 }
 

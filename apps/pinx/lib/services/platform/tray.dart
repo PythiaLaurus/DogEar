@@ -8,6 +8,8 @@ import '../../configs/tray_config.dart';
 class AppTray {
   static const String iconPath = 'assets/system/tray.ico';
 
+  static bool get isInitialized => trayManager.hasListeners;
+
   static Future<void> initSystemTray() async {
     // Set the system tray icon
     await trayManager.setIcon(iconPath);
