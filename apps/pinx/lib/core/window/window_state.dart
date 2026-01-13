@@ -43,7 +43,7 @@ class WindowState extends _$WindowState with WindowListener {
     monitorInfo.ref.cbSize = sizeOf<MONITORINFO>();
     GetMonitorInfo(monitor, monitorInfo);
 
-    final m = monitorInfo.ref.rcMonitor;
+    final m = monitorInfo.ref.rcWork;
     calloc.free(monitorInfo);
 
     final leftDist = left - m.left;
