@@ -5,24 +5,35 @@ import 'package:window_manager/window_manager.dart';
 
 import '../../configs/tray_config.dart';
 
-Future<void> initSystemTray() async {
-  // Set the system tray icon
-  String iconPath = 'assets/system/tray.ico';
-  await trayManager.setIcon(iconPath);
+class AppTray {
+  static const String iconPath = 'assets/system/tray.ico';
 
-  // Set the system tray title and tooltip
-  if (!Platform.isLinux) {
-    await trayManager.setToolTip(TrayConfig.tooltip);
+  static Future<void> initSystemTray() async {
+    // Set the system tray icon
+    await trayManager.setIcon(iconPath);
+
+    // Set the system tray title and tooltip
+    if (!Platform.isLinux) {
+      await trayManager.setToolTip(TrayConfig.tooltip);
+    }
+
+    // create context menu
+    Menu menu = Menu(items: TrayConfig.menuItems);
+
+    // set context menu
+    await trayManager.setContextMenu(menu);
+
+    // handle system tray event
+    trayManager.addListener(SystemTrayListener());
   }
 
-  // create context menu
-  Menu menu = Menu(items: TrayConfig.menuItems);
+  static void hideTray() async {
+    await trayManager.destroy();
+  }
 
-  // set context menu
-  await trayManager.setContextMenu(menu);
-
-  // handle system tray event
-  trayManager.addListener(SystemTrayListener());
+  static void showTray() async {
+    await trayManager.setIcon(iconPath);
+  }
 }
 
 class SystemTrayListener with TrayListener {

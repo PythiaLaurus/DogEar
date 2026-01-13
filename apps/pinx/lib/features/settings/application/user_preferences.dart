@@ -3,6 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../core/hotkeys/hotkeys.dart';
 import '../../../core/storage/storage.dart';
+import '../../../services/platform/tray.dart';
 import '../domain/user_preferences_model.dart';
 
 part 'user_preferences.g.dart';
@@ -81,12 +82,13 @@ class UserPreferences extends _$UserPreferences {
     if (prevPrefs.closeToTray == value) return;
 
     _saveUserPrefs(prevPrefs.copyWith(closeToTray: value));
-    _applyCloseToTray(value);
+
+    // Will be auto applied by [NormalAppBar]
+    // _applyCloseToTray(value);
   }
 
-  void _applyCloseToTray(bool newValue) {
-    // TODO:  implement
-  }
+  // Will be auto applied by [NormalAppBar]
+  // void _applyCloseToTray(bool value) {}
 
   /// Show tray icon
   void updateShowTrayIcon(bool value) {
@@ -100,7 +102,7 @@ class UserPreferences extends _$UserPreferences {
   }
 
   void _applyShowTrayIcon(bool newValue) {
-    // TODO:  implement
+    newValue ? AppTray.showTray() : AppTray.hideTray();
   }
 
   /// Reset All User Preferences
@@ -120,7 +122,7 @@ class UserPreferences extends _$UserPreferences {
   void _applyAll(UserPreferencesModel prefs) {
     _applyShortcut(prefs.shortcut);
     _applyDogEarColor(prefs.dogEarColorARGB);
-    _applyCloseToTray(prefs.closeToTray);
+    // _applyCloseToTray(prefs.closeToTray);
     _applyShowTrayIcon(prefs.showTrayIcon);
   }
 }

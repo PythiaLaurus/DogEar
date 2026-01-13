@@ -1,6 +1,5 @@
 import 'dart:io';
 
-
 import 'configs/app_config.dart';
 import 'core/hotkeys/hotkeys.dart';
 import 'core/widgets/custom_window_frame.dart';
@@ -18,13 +17,19 @@ void main() async {
 
   await AppHotKeys.unregisterAll();
 
-  if (await FlutterSingleInstance().isFirstInstance()) {
+  final appInstance = FlutterSingleInstance();
+  if (await appInstance.isFirstInstance()) {
     runApp(const ProviderScope(child: MyApp()));
   } else {
-    await FlutterSingleInstance().focus();
+    await appInstance.focus();
 
     exit(0);
   }
+
+  FlutterSingleInstance.onFocus = (_) {
+    windowManager.show();
+    windowManager.focus();
+  };
 
   await windowManager.ensureInitialized();
   WindowOptions windowOptions = const WindowOptions(
@@ -40,7 +45,7 @@ void main() async {
     await windowManager.show();
     await windowManager.focus();
 
-    await initSystemTray();
+    await AppTray.initSystemTray();
   });
 }
 

@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import '../../features/settings/application/user_preferences.dart';
 import '../theme/theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:window_manager/window_manager.dart';
@@ -49,7 +50,13 @@ class _WindowButtonsState extends ConsumerState<WindowButtons> {
           WindowCaptionButton.close(
             brightness: brightness,
             onPressed: () {
-              windowManager.hide();
+              final prefs = ref.read(userPreferencesProvider).value;
+
+              if (prefs?.closeToTray ?? false) {
+                windowManager.hide();
+              } else {
+                windowManager.close();
+              }
             },
           ),
         ],
