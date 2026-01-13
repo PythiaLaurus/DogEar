@@ -144,7 +144,6 @@ class _ShortcutRecorderState extends ConsumerState<ShortcutRecorder> {
               color: _isRecording
                   ? Theme.of(context).colorScheme.primary
                   : appColors.textPrimary,
-              fontWeight: FontWeight.w500,
             ),
           ),
         ),

@@ -10,7 +10,6 @@ import 'package:flutter_single_instance/flutter_single_instance.dart';
 
 import 'routes/app_routes.dart';
 import 'core/theme/theme.dart';
-import 'services/platform/tray.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
