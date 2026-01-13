@@ -14,7 +14,7 @@ import 'core/theme/theme.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await AppHotKeys.unregisterAll();
+  await appHotKeys.unregisterAll();
 
   final appInstance = FlutterSingleInstance();
   if (await appInstance.isFirstInstance()) {

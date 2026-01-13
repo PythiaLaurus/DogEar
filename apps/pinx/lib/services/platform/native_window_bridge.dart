@@ -8,7 +8,7 @@ class NativeWindowBridge {
   NativeWindowBridge._();
   static final instance = NativeWindowBridge._();
 
-  // Get the handle of the foreground window
+  /// Get the handle of the foreground window.
   int get _foregroundWindowHandle => GetForegroundWindow();
 
   /// Toggle Foreground Window Topmost.
@@ -101,6 +101,21 @@ class NativeWindowBridge {
     }
   }
 
+  /// Register a window class, used to call [CreateWindowEx] (with
+  /// lpszClassName set to [lpWndClass]).
+  /// Return an ATOM, representing a unique code for the class registered.
+  /// Return 0 if failed.
+  int registerClass(WNDCLASS lpWndClass) {
+    final ptr = calloc<WNDCLASS>();
+    try {
+      ptr.ref = lpWndClass;
+      return RegisterClass(ptr);
+    } finally {
+      calloc.free(ptr);
+    }
+  }
+
+  /// DebugPrint.
   void _log(String functionName, int errorCode) {
     assert(() {
       final formatted = _formatError(errorCode);
@@ -111,6 +126,8 @@ class NativeWindowBridge {
     }());
   }
 
+  /// Find actual error message from error code and format it.
+  /// Used by [_log].
   String _formatError(int errorCode) {
     final buffer = calloc<Pointer<Utf16>>();
     const flags =

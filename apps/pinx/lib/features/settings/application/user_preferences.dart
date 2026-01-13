@@ -46,18 +46,18 @@ class UserPreferences extends _$UserPreferences {
     final prevKey = state.value?.shortcut;
 
     if (prevKey != null) {
-      AppHotKeys.unregister(prevKey);
+      appHotKeys.unregister(prevKey);
     }
 
     if (newKey == null) return;
 
-    final newHotkeyBinding = HotkeyBinding(
+    final newHotkeyBinding = HotKeyBinding(
       hotKey: newKey,
       keyDownHandler: (hotkey) {
         nativeWindowBridge.toggleForegroundWindowTopmost();
       },
     );
-    AppHotKeys.register(newHotkeyBinding);
+    appHotKeys.register(newHotkeyBinding);
   }
 
   /// Dog Ear Color
