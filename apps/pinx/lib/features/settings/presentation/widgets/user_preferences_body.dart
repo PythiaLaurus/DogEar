@@ -284,6 +284,10 @@ class _UserPreferencesBodyState extends ConsumerState<UserPreferencesBody> {
                     TextButton(
                       onPressed: () => _resetUserPrefs(),
                       style: ButtonStyle(
+                        visualDensity: VisualDensity(
+                          horizontal: -4,
+                          vertical: -4,
+                        ),
                         foregroundColor: appColors.stateResolved(
                           hoverColor: Colors.red,
                           normalColor: Theme.of(context).colorScheme.primary,
