@@ -23,14 +23,6 @@ It leverages `dart:ffi` to interact directly with low-level Windows APIs (`user3
 * **🛡️ Robust Resource Management**
     * Built-in lifecycle management for GDI objects (Regions, Brushes) to prevent memory leaks.
 
-## 🛠️ Project Structure
-
-This project follows a **Layered Architecture** to decouple Win32 API complexities from Flutter business logic.
-
-* `lib/native/`: FFI bindings, function mappings, and Win32 constants.
-* `lib/overlay/`: Business logic for window shapes, positioning, and sync.
-* `lib/main.dart`: Entry point and UI orchestration.
-
 ## 🚀 Getting Started
 
 ### Prerequisites
