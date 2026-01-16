@@ -5,7 +5,7 @@ import '../../../core/hotkeys/hotkeys.dart';
 import '../../../core/storage/storage.dart';
 import '../../../services/platform/native_window_bridge.dart';
 import '../../../services/platform/tray.dart';
-import '../domain/user_preferences_model.dart';
+import '../domain/user_preferences_state.dart';
 
 part 'user_preferences.g.dart';
 
@@ -14,17 +14,17 @@ class UserPreferences extends _$UserPreferences {
   static const String _kStorage = "settings.userPreferences";
 
   @override
-  FutureOr<UserPreferencesModel> build() async {
+  FutureOr<UserPreferencesState> build() async {
     final savedPrefsJson = await appStorage.getJson(_kStorage);
 
     if (savedPrefsJson != null) {
-      final savedPrefs = UserPreferencesModel.fromJson(savedPrefsJson);
+      final savedPrefs = UserPreferencesState.fromJson(savedPrefsJson);
       _applyAll(savedPrefs);
 
       return savedPrefs;
     }
 
-    final prefs = UserPreferencesModel.initialize();
+    final prefs = UserPreferencesState.initialize();
     _saveUserPrefs(prefs);
     _applyAll(prefs);
 
@@ -108,19 +108,19 @@ class UserPreferences extends _$UserPreferences {
 
   /// Reset All User Preferences
   void resetUserPrefs() {
-    final initPrefs = UserPreferencesModel.initialize();
+    final initPrefs = UserPreferencesState.initialize();
     _saveUserPrefs(initPrefs);
     _applyAll(initPrefs);
   }
 
   /// Save All User Preferences
-  void _saveUserPrefs(UserPreferencesModel newPrefs) {
+  void _saveUserPrefs(UserPreferencesState newPrefs) {
     state = AsyncValue.data(newPrefs);
     appStorage.setJson(_kStorage, newPrefs.toJson());
   }
 
   /// Apply All User Preferences
-  Future<void> _applyAll(UserPreferencesModel prefs) async {
+  Future<void> _applyAll(UserPreferencesState prefs) async {
     _applyShortcut(prefs.shortcut);
     _applyDogEarColor(prefs.dogEarColorARGB);
     // _applyCloseToTray(prefs.closeToTray);

@@ -8,7 +8,7 @@ import '../../../../core/widgets/shortcut_recorder.dart';
 import '../../../../core/widgets/theme_model_selector.dart';
 import '../../application/user_preferences.dart';
 import '../../domain/settings_items.dart';
-import '../../domain/user_preferences_model.dart';
+import '../../domain/user_preferences_state.dart';
 
 class UserPreferencesBody extends ConsumerStatefulWidget {
   const UserPreferencesBody({super.key});
@@ -75,7 +75,7 @@ class _UserPreferencesBodyState extends ConsumerState<UserPreferencesBody> {
     final appTextStyles = ref.watch(appTextStylesProvider);
     final userPrefs =
         ref.watch(userPreferencesProvider).value ??
-        UserPreferencesModel.initialize();
+        UserPreferencesState.initialize();
     final userPrefsCtrl = ref.read(userPreferencesProvider.notifier);
 
     int colorSelectedARGB = userPrefs.dogEarColorARGB;
@@ -198,7 +198,7 @@ class _UserPreferencesBodyState extends ConsumerState<UserPreferencesBody> {
     final appTextStyles = ref.watch(appTextStylesProvider);
     final userPrefs =
         ref.watch(userPreferencesProvider).value ??
-        UserPreferencesModel.initialize();
+        UserPreferencesState.initialize();
     final userPrefsCtrl = ref.read(userPreferencesProvider.notifier);
 
     final widgetBuilders =
