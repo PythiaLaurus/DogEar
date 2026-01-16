@@ -1,0 +1,506 @@
+// ignore_for_file: constant_identifier_names, non_constant_identifier_names
+
+import 'dart:ffi';
+import 'dart:math' as math;
+
+import 'package:ffi/ffi.dart';
+import 'package:flutter/material.dart' show debugPrint;
+import 'package:win32/win32.dart';
+
+import 'win32_ext.dart';
+
+class NativeWindowBridge {
+  NativeWindowBridge._();
+  static final instance = NativeWindowBridge._();
+
+  /// [DestroyWindow].<br>
+  /// Destroys the specified window and releases its resources.
+  ///
+  /// [hwnd] A handle to the window to be destroyed.<br>
+  ///
+  /// Returns true if the function succeeds; false if it fails.
+  /// Note: A window cannot be destroyed if it was created by another thread.
+  bool destroyWindow(int hwnd) {
+    final result = DestroyWindow(hwnd);
+    _log("destroyWindow");
+    return result != 0;
+  }
+
+  /// [ShowWindow].<br>
+  /// Sets the specified window's show state.
+  ///
+  /// [hwnd] A handle to the window.<br>
+  /// [nCmdShow] Controls how the window is to be shown (e.g., SW_SHOW, SW_HIDE).<br>
+  ///
+  /// Returns a non-zero value if the window was previously visible.
+  /// Returns zero if the window was previously hidden.
+  /// Note: The return value does not indicate success or failure of the command.
+  int showWindow(int hwnd, int nCmdShow) {
+    return ShowWindow(hwnd, nCmdShow);
+  }
+
+  /// [UpdateWindow].<br>
+  /// Updates the client area of the specified window by sending a WM_PAINT message
+  /// directly to the window procedure if the update region is not empty.
+  ///
+  /// [hwnd] A handle to the window to be updated.<br>
+  ///
+  /// Returns true if the function succeeds; otherwise false.
+  bool updateWindow(int hwnd) {
+    final result = UpdateWindow(hwnd);
+    _log("updateWindow");
+    return result != 0;
+  }
+
+  /// Toggles Foreground Window Topmost.
+  /// Returns (hwnd, shouldTopmost, isSuccess).<br>
+  /// hwnd: The handle of the window.<br>
+  /// shouldTopmost: true if the window should be topmost, false otherwise.<br>
+  /// isSuccess: true if the window was successfully toggled, false otherwise.
+  ({int hwnd, bool shouldTopmost, bool isSuccess})
+  toggleForegroundWindowTopmost() {
+    final hwnd = getForegroundWindowHandle();
+
+    if (hwnd == 0) {
+      return (hwnd: 0, shouldTopmost: false, isSuccess: false);
+    }
+
+    final result = toggleTopmost(hwnd);
+
+    return (
+      hwnd: hwnd,
+      shouldTopmost: result.shouldTopmost,
+      isSuccess: result.isSuccess,
+    );
+  }
+
+  /// Toggles Topmost.
+  /// Returns ([shouldTopmost], [isSuccess]).<br>
+  /// [shouldTopmost]: true if the window should be topmost, false otherwise.<br>
+  /// [isSuccess]: true if the window was successfully toggled, false otherwise.
+  ({bool shouldTopmost, bool isSuccess}) toggleTopmost(int hwnd) {
+    final shouldTopmost = !isTopmost(hwnd);
+    final isSuccess = setTopmost(hwnd, topmost: shouldTopmost);
+
+    return (shouldTopmost: shouldTopmost, isSuccess: isSuccess);
+  }
+
+  /// Sets or cancel the topmost state of a window.
+  /// Returns true if the window was successfully set or canceled as topmost.
+  bool setTopmost(int hwnd, {bool topmost = true}) {
+    final insertAfter = topmost ? HWND_TOPMOST : HWND_NOTOPMOST;
+    final flags = SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE;
+
+    final result = SetWindowPos(hwnd, insertAfter, 0, 0, 0, 0, flags);
+
+    if (result == 0) {
+      _log("setTopmost");
+      return false;
+    }
+
+    return true;
+  }
+
+  /// Returns true if the window is topmost.
+  bool isTopmost(int hwnd) {
+    final exStyle = GetWindowLongPtr(hwnd, GWL_EXSTYLE);
+
+    return (exStyle & WS_EX_TOPMOST) == WS_EX_TOPMOST;
+  }
+
+  /// Gets the handle of the foreground window.
+  /// Only the root window is returned.
+  /// Returns 0 if no window is active.
+  int getForegroundWindowHandle() {
+    final hwnd = GetForegroundWindow();
+    if (hwnd == 0) return 0;
+
+    var candidate = hwnd;
+
+    final root = GetAncestor(candidate, GA_ROOT);
+    if (root != 0) candidate = root;
+
+    final rootOwner = GetAncestor(candidate, GA_ROOTOWNER);
+    if (rootOwner != 0) candidate = rootOwner;
+
+    return candidate;
+  }
+
+  /// Gets Rectangle area of window.
+  /// Use DwmGetWindowAttribute to get visual accessible area (excluded shadow).
+  /// If failed, fall back to GetWindowRect.
+  math.Rectangle<int>? getWindowRect(int hwnd) {
+    final rect = calloc<RECT>();
+    try {
+      // Try DwmGetWindowAttribute for extended frame bounds (excludes shadow)
+      try {
+        // DWMWA_EXTENDED_FRAME_BOUNDS = 9
+        final result = DwmGetWindowAttribute(
+          hwnd,
+          DWMWA_EXTENDED_FRAME_BOUNDS,
+          rect,
+          sizeOf<RECT>(),
+        );
+        if (result == S_OK) {
+          return math.Rectangle<int>(
+            rect.ref.left,
+            rect.ref.top,
+            rect.ref.right - rect.ref.left,
+            rect.ref.bottom - rect.ref.top,
+          );
+        }
+      } catch (e) {
+        // Ignore DWM errors
+      }
+
+      // Fallback to GetWindowRect
+      final result = GetWindowRect(hwnd, rect);
+      if (result != 0) {
+        return math.Rectangle<int>(
+          rect.ref.left,
+          rect.ref.top,
+          rect.ref.right - rect.ref.left,
+          rect.ref.bottom - rect.ref.top,
+        );
+      }
+      return null;
+    } finally {
+      calloc.free(rect);
+    }
+  }
+
+  /// [SetWindowPos].<br>
+  /// Changes the size, position, and Z-order of a child, pop-up, or top-level window.
+  ///
+  /// [hwnd] A handle to the window.<br>
+  /// [hwndInsertAfter] A handle to the window to precede the positioned window in the Z order (e.g., HWND_TOPMOST).<br>
+  /// [x], [y] The new coordinates of the left and top sides of the window.<br>
+  /// [cx], [cy] The new width and height of the window, in pixels.<br>
+  /// [uFlags] The window sizing and positioning flags (e.g., SWP_NOSIZE | SWP_NOACTIVATE).<br>
+  ///
+  /// Returns true if the function succeeds; otherwise returns false.
+  bool setWindowPos(
+    int hwnd,
+    int hwndInsertAfter,
+    int x,
+    int y,
+    int cx,
+    int cy,
+    int uFlags,
+  ) {
+    final result = SetWindowPos(hwnd, hwndInsertAfter, x, y, cx, cy, uFlags);
+    _log("setWindowPos");
+    return result != 0;
+  }
+
+  /// [CreateSolidBrush].<br>
+  /// Creates a logical brush that has the specified solid color.
+  ///
+  /// [color] The color of the brush in COLORREF format (0x00BBGGRR).
+  ///
+  /// Returns a handle (HBRUSH) that identifies the brush if successful.
+  /// Returns 0 (NULL) if the function fails.
+  ///
+  /// IMPORTANT: When you are finished with the brush, you must delete it
+  /// by calling [deleteObject] to release system resources.
+  int createSolidBrush(int color) {
+    final result = CreateSolidBrush(color);
+    _log("createSolidBrush");
+    return result;
+  }
+
+  /// Creates a native Win32 Region handle (HRGN) from Dart points.
+  ///
+  /// Returns a handle to the region (HRGN) if successful, or 0 on failure.
+  ///
+  /// Note: The returned handle ownership is usually transferred to the
+  /// window when used with [SetWindowRgn].
+  int createPolygonRgn(List<math.Point<int>> points) {
+    final lpPoints = calloc<POINT>(points.length);
+    try {
+      for (var i = 0; i < points.length; i++) {
+        lpPoints[i].x = points[i].x;
+        lpPoints[i].y = points[i].y;
+      }
+
+      final result = CreatePolygonRgn(lpPoints, points.length, WINDING);
+      _log("createPolygonRgn");
+      return result;
+    } finally {
+      calloc.free(lpPoints);
+    }
+  }
+
+  /// [SetWindowRgn].<br>
+  /// Sets the window region of a window.
+  /// The window region determines the area where the system permits drawing.
+  ///
+  /// [hwnd] Handle to the window whose window region is to be set.<br>
+  /// [hRgn] Handle to a region. The function sets the [window region] of the [window] to this [region]
+  /// (this may be a bit awkward to read, it means that this function uses the provided region handle
+  /// as a template to crop the window's shape).<br>
+  /// [bRedraw] Specifies whether the system redraws the window after setting the window region
+  /// (immediately redraw or wait until the next time that system decides to redraw).<br>
+  ///
+  /// Returns true if successful; otherwise, returns false.
+  ///
+  /// IMPORTANT: After a successful call, the system owns the region specified by the region handle [hRgn].
+  /// Do not make further function calls with this region handle, and do not delete it.
+  ///
+  /// Will automatically delete the region handle if the function fails, so don't call [DeleteObject] manually.
+  bool setWindowRgn(int hwnd, int hRgn, bool bRedraw) {
+    final result = SetWindowRgn(hwnd, hRgn, bRedraw ? TRUE : FALSE);
+
+    if (result == 0) {
+      DeleteObject(hRgn);
+      _log("setWindowRgn");
+      return false;
+    }
+
+    return true;
+  }
+
+  /// [InvalidateRect].<br>
+  /// Adds a rectangle to the specified window's update region.
+  /// This tells Windows that the area needs to be repainted.
+  ///
+  /// [hwnd] A handle to the window whose update region has changed.<br>
+  /// [lpRect] A pointer to a RECT structure that contains the coordinates of the update region.<br>
+  /// If this parameter is [nullptr], the entire client area is added to the update region.<br>
+  /// [bErase] Specifies whether the background within the update region is to be erased
+  /// when the update region is processed. If true, the background inside the
+  /// update region is erased (using the [hbrBackground] regesitered in the [WNDCLASS]) before repainting.
+  /// If false, the background remains unchanged, and you just draw over it.<br>
+  ///
+  /// Returns true if the function succeeds; otherwise false.
+  bool invalidateRect(int hwnd, Pointer<RECT> lpRect, bool bErase) {
+    final result = InvalidateRect(hwnd, lpRect, bErase ? TRUE : FALSE);
+    _log("invalidateRect");
+    return result != 0;
+  }
+
+  /// [SetClassLongPtr].<br>
+  /// Replaces the specified value at the specified offset in the extra class memory
+  /// or the WNDCLASSEX structure for the class to which the window belongs.
+  ///
+  /// [hwnd] A handle to the window and, indirectly, the class to which the window belongs.<br>
+  /// [nIndex] The value to be replaced (e.g., GCLP_HBRBACKGROUND, GCLP_HICON).<br>
+  /// [dwNewLong] The replacement value.<br>
+  ///
+  /// Returns the previous value of the specified offset. If the previous value is 0
+  /// and the function succeeds, the return value is 0, but GetLastError will still be 0.
+  /// Returns 0 on failure.
+  int setClassLongPtr(int hwnd, int nIndex, int dwNewLong) {
+    final result = SetClassLongPtr(hwnd, nIndex, dwNewLong);
+    _log("setClassLongPtr");
+    return result;
+  }
+
+  /// [SetLayeredWindowAttributes].<br>
+  /// Sets the opacity and transparency color key of a layered window.
+  ///
+  /// [hwnd] is the handle to the layered window.<br>
+  /// [crKey] specifies the color key (in BGR order: 0xBBGGRR).<br>
+  /// [bAlpha] specifies the opacity value (0 to 255).<br>
+  /// [dwFlags] determines the action to take (e.g., LWA_COLORKEY, LWA_ALPHA).<br>
+  ///
+  /// Note: The window must have the WS_EX_LAYERED style set.
+  ///
+  /// Returns true if successful; otherwise, returns false.
+  bool setLayeredWindowAttributes(
+    int hwnd,
+    int crKey,
+    int bAlpha,
+    int dwFlags,
+  ) {
+    final result = SetLayeredWindowAttributes(hwnd, crKey, bAlpha, dwFlags);
+    _log("setLayeredWindowAttributes");
+    return result != 0;
+  }
+
+  /// [CreateWindowEx].<br>
+  /// Creates an overlapped, pop-up, or child window with an extended window style.
+  ///
+  /// [dwExStyle] specifies the extended window style (e.g., WS_EX_LAYERED).<br>
+  /// [lpClassName] is the name of the window class registered via RegisterClass.<br>
+  /// [lpWindowName] is the window title (can be empty for overlays).<br>
+  /// [dwStyle] specifies the window style (e.g., WS_POPUP).<br>
+  /// [x], [y], [nWidth], [nHeight] define the initial position and dimensions.<br>
+  /// [hWndParent] is the handle to the parent or owner window.<br>
+  /// [hInstance] is the handle to the instance of the module to be associated with the window.<br>
+  /// [lpParam] is a pointer to a value to be passed to the window through the CREATESTRUCT.<br>
+  ///
+  /// This wrapper handles the conversion of Dart [String] to Native Utf16 and
+  /// ensures memory is freed after the native call.
+  ///
+  /// Returns the window handle (hwnd) if successful; otherwise, returns 0.
+  int createWindowEx(
+    int dwExStyle,
+    String lpClassName,
+    String lpWindowName,
+    int dwStyle,
+    int x,
+    int y,
+    int nWidth,
+    int nHeight,
+    int hWndParent,
+    int hMenu,
+    int hInstance,
+    Pointer<Void> lpParam,
+  ) {
+    final className = lpClassName.toNativeUtf16();
+    final windowName = lpWindowName.toNativeUtf16();
+    try {
+      final result = CreateWindowEx(
+        dwExStyle,
+        className,
+        windowName,
+        dwStyle,
+        x,
+        y,
+        nWidth,
+        nHeight,
+        hWndParent,
+        hMenu,
+        hInstance,
+        lpParam,
+      );
+
+      _log("createWindowEx");
+
+      return result;
+    } finally {
+      calloc.free(className);
+      calloc.free(windowName);
+    }
+  }
+
+  /// Returns the handle to the module containing the specified function.
+  /// [lpModuleName] is the name of the module to be retrieved.
+  /// If [lpModuleName] is null, the handle of the calling module
+  /// (current dart process) is returned.
+  int getModuleHandle(String? lpModuleName) {
+    if (lpModuleName == null) return GetModuleHandle(nullptr);
+
+    final name = lpModuleName.toNativeUtf16();
+
+    try {
+      return GetModuleHandle(name);
+    } finally {
+      calloc.free(name);
+    }
+  }
+
+  /// [SetWinEventHook].<br>
+  /// Sets an event hook function for a range of events.
+  ///
+  /// [eventMin] specifies the event constant for the lowest event value in the range.<br>
+  /// [eventMax] specifies the event constant for the highest event value in the range.<br>
+  /// [hmodWinEventProc] handle to the DLL that contains the hook function (null for current process).<br>
+  /// [pfnWinEventProc] pointer to the event hook function.<br>
+  /// [idProcess] specifies the ID of the process from which the hook function receives events (0 for all).<br>
+  /// [idThread] specifies the ID of the thread from which the hook function receives events (0 for all).<br>
+  /// [dwFlags] flag values that specify the location of the hook function and of the events to be skipped.<br>
+  ///
+  /// Returns an [HWINEVENTHOOK] handle that identifies this event hook instance.
+  /// Returns 0 if the hook could not be installed.
+  int setWinEventHook(
+    int eventMin,
+    int eventMax,
+    int hmodWinEventProc,
+    Pointer<NativeFunction<WinEventProc>> pfnWinEventProc,
+    int idProcess,
+    int idThread,
+    int dwFlags,
+  ) {
+    final result = SetWinEventHook(
+      eventMin,
+      eventMax,
+      hmodWinEventProc,
+      pfnWinEventProc,
+      idProcess,
+      idThread,
+      dwFlags,
+    );
+    _log('setWinEventHook');
+    return result;
+  }
+
+  /// Removes an event hook function created by a previous call to [setWinEventHook].
+  ///
+  /// [hWinEventHook] is the handle to the event hook returned by the previous
+  /// call to [setWinEventHook].
+  ///
+  /// Returns true if successful; otherwise, returns false.
+  bool unhookWinEvent(int hWinEventHook) {
+    final result = UnhookWinEvent(hWinEventHook);
+    _log('unhookWinEvent');
+    return result != 0;
+  }
+
+  /// Registers a window class, used to call [CreateWindowEx] (with
+  /// lpszClassName set to [lpWndClass]).
+  /// Return an ATOM, representing a unique code for the class registered.
+  /// Return 0 if failed.
+  int registerClass(WNDCLASS lpWndClass) {
+    final ptr = calloc<WNDCLASS>();
+    try {
+      ptr.ref = lpWndClass;
+      final atom = RegisterClass(ptr);
+
+      _log('registerClass');
+
+      return atom;
+    } finally {
+      calloc.free(ptr);
+    }
+  }
+
+  /// DebugPrint.
+  void _log(String functionName) {
+    assert(() {
+      final errorCode = GetLastError();
+      if (errorCode == 0) return true;
+
+      final formatted = _formatError(errorCode);
+      debugPrint(
+        '[Native Window Bridge] $functionName failed | Error $errorCode: $formatted',
+      );
+      return true;
+    }());
+  }
+
+  /// Finds actual error message from error code and format it.
+  /// Used by [_log].
+  String _formatError(int errorCode) {
+    final buffer = calloc<Pointer<Utf16>>();
+    const flags =
+        FORMAT_MESSAGE_ALLOCATE_BUFFER |
+        FORMAT_MESSAGE_FROM_SYSTEM |
+        FORMAT_MESSAGE_IGNORE_INSERTS;
+
+    final length = FormatMessage(
+      flags,
+      nullptr,
+      errorCode,
+      0,
+      buffer.cast(),
+      0,
+      nullptr,
+    );
+
+    if (length == 0) {
+      calloc.free(buffer);
+      return 'Windows error $errorCode';
+    }
+
+    final messagePtr = buffer.value;
+    final message = messagePtr.toDartString().trim();
+    LocalFree(messagePtr);
+    calloc.free(buffer);
+
+    return message;
+  }
+}
+
+final nativeWindowBridge = NativeWindowBridge.instance;

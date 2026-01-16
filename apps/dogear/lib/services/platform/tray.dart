@@ -33,6 +33,8 @@ class AppTray {
   }
 
   void hideTray() async {
+    /// This api only destroys tray icon, not destroy [TrayListener]
+    /// or any other settings set in [initSystemTray].
     await trayManager.destroy();
   }
 
