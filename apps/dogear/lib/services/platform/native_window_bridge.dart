@@ -126,6 +126,58 @@ class NativeWindowBridge {
     return candidate;
   }
 
+  /// Gets the process name of a window.
+  ///
+  /// Returns the process name if successful, otherwise null.
+  String? getProcessName(int hwnd) {
+    String processName = '';
+
+    final processIdPtr = calloc<Uint32>();
+    try {
+      // Get process ID
+      GetWindowThreadProcessId(hwnd, processIdPtr);
+      final pid = processIdPtr.value;
+
+      if (pid == 0) return null;
+
+      // Open process to query information
+      // PROCESS_QUERY_INFORMATION: Allow query information
+      // PROCESS_VM_READ: Allow read memory (for some old APIs, it's required))
+      final hProcess = OpenProcess(
+        PROCESS_QUERY_INFORMATION | PROCESS_VM_READ,
+        FALSE,
+        pid,
+      );
+
+      if (hProcess == 0) return null;
+
+      try {
+        // buffer to store process name
+        final buffer = calloc<Uint16>(MAX_PATH).cast<Utf16>();
+
+        try {
+          // Get process module base name (e.g., "notepad.exe")
+          // hModule: 0 (NULL) refers to the executable itself
+          final result = GetModuleBaseName(hProcess, 0, buffer, MAX_PATH);
+
+          if (result > 0) {
+            processName = buffer.toDartString();
+          }
+        } finally {
+          calloc.free(buffer);
+        }
+      } finally {
+        CloseHandle(hProcess);
+      }
+    } finally {
+      calloc.free(processIdPtr);
+    }
+
+    _log("getProcessName");
+
+    return processName.isEmpty ? null : processName;
+  }
+
   /// Gets Rectangle area of window.
   /// Use DwmGetWindowAttribute to get visual accessible area (excluded shadow).
   /// If failed, fall back to GetWindowRect.
