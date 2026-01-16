@@ -92,7 +92,7 @@ BEGIN
             VALUE "CompanyName", "com.iexlab" "\0"
             VALUE "FileDescription", "pinx" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "pinx" "\0"
+            VALUE "InternalName", "com.robotmachete.dogear" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 com.iexlab. All rights reserved." "\0"
             VALUE "OriginalFilename", "pinx.exe" "\0"
             VALUE "ProductName", "pinx" "\0"
