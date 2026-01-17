@@ -26,7 +26,7 @@ class _ShellViewState extends ConsumerState<ShellView> {
             const Icon(Icons.push_pin, size: 20),
             const SizedBox(width: 12),
             Text(
-              'PinX Settings',
+              'Dog Ear Settings',
               style: appTextStyles.body.copyWith(fontWeight: FontWeight.bold),
             ),
           ],
