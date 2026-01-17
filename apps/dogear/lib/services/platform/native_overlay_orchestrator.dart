@@ -14,7 +14,10 @@ class NativeOverlayOrchestrator {
 
   // Configurations
   // Class name
-  static const String kClassName = "PinX_Triangle_Overlay";
+  static const String _kClassNamePrefix =
+      "RobotMachete_DogEar_Triangle_Overlay_";
+  static final String kClassName =
+      "$_kClassNamePrefix${DateTime.now().millisecondsSinceEpoch}";
   // Dog ear size
   static const dogEarSize = 20;
   // Dog ear (Triangle) shape
@@ -35,9 +38,12 @@ class NativeOverlayOrchestrator {
   int _brushHandle = 0;
   NativeCallable<WinEventProc>? _hookCallback;
 
+  int? getOverlayHwnd(int targetHwnd) => _targetToOverlay[targetHwnd];
+  int? getTargetHwnd(int overlayHwnd) => _overlayToTarget[overlayHwnd];
+
   /// Adds a new target window to be tracked.
   void addTarget(int targetHwnd) {
-    if (_targetToOverlay.containsKey(targetHwnd)) return;
+    if (_shouldIgnoreWindow(targetHwnd)) return;
 
     if (!_isClassRegistered) {
       init();
@@ -91,7 +97,7 @@ class NativeOverlayOrchestrator {
       nativeWindowBridge.setClassLongPtr(
         overlayHwnd,
         GCLP_HBRBACKGROUND,
-        targetHwnd,
+        _brushHandle,
       );
     }
 
@@ -107,6 +113,30 @@ class NativeOverlayOrchestrator {
     );
 
     _updateOverlayPosition(targetHwnd, overlayHwnd);
+
+    SetForegroundWindow(targetHwnd);
+
+    // Set owner
+    // This makes windows automatically manages the lifetime of the overlay.
+    nativeWindowBridge.setWindowOwner(overlayHwnd, targetHwnd);
+  }
+
+  /// Ignore windows that are already tracked, created by ourself, and [ToolWindow].
+  bool _shouldIgnoreWindow(int hwnd) {
+    if (_targetToOverlay.containsKey(hwnd) ||
+        _overlayToTarget.containsKey(hwnd)) {
+      return true;
+    }
+    final className = nativeWindowBridge.getClassName(hwnd);
+    if (className == null) return true;
+    if (className.startsWith(_kClassNamePrefix)) {
+      return true;
+    }
+
+    int style = GetWindowLongPtr(hwnd, GWL_EXSTYLE);
+    if ((style & WS_EX_TOOLWINDOW) != 0) return true;
+
+    return false;
   }
 
   /// Removes a tracked target window.
@@ -162,18 +192,17 @@ class NativeOverlayOrchestrator {
   void init() {
     if (_isClassRegistered) return;
 
-    final wndClass = calloc<WNDCLASS>();
     final classNamePtr = kClassName.toNativeUtf16();
+    final hInst = nativeWindowBridge.getModuleHandle(null);
+
+    final wndClass = calloc<WNDCLASS>();
 
     try {
       wndClass.ref.style = CS_HREDRAW | CS_VREDRAW;
-      wndClass.ref.lpfnWndProc = Pointer.fromFunction<WNDPROC>(
-        _staticWndProc,
-        0,
-      );
+      wndClass.ref.lpfnWndProc = DefWindowProcWPtr;
       wndClass.ref.cbClsExtra = 0;
       wndClass.ref.cbWndExtra = 0;
-      wndClass.ref.hInstance = nativeWindowBridge.getModuleHandle(null);
+      wndClass.ref.hInstance = hInst;
       wndClass.ref.hIcon = 0;
       wndClass.ref.hCursor = LoadCursor(0, IDC_ARROW);
       // By set [hbrBackground] to 0, erasing step is invisible to the user
@@ -193,10 +222,8 @@ class NativeOverlayOrchestrator {
   /// Disposes resources.
   void dispose() {
     if (_hookHandle != 0) {
-      nativeWindowBridge.unhookWinEvent(_hookHandle);
-      _hookHandle = 0;
+      _stopHook();
     }
-    _hookCallback?.close();
 
     for (final h in _targetToOverlay.values) {
       nativeWindowBridge.destroyWindow(h);
@@ -208,22 +235,32 @@ class NativeOverlayOrchestrator {
       DeleteObject(_brushHandle);
       _brushHandle = 0;
     }
+
+    if (_isClassRegistered) {
+      nativeWindowBridge.unregisterClass(kClassName, 0);
+      _isClassRegistered = false;
+    }
   }
 
   void _startHook() {
     if (_hookHandle != 0) return;
 
-    _hookCallback = NativeCallable<WinEventProc>.listener(_staticHookCallback);
-
-    _hookHandle = nativeWindowBridge.setWinEventHook(
-      EVENT_OBJECT_LOCATIONCHANGE,
-      EVENT_OBJECT_LOCATIONCHANGE,
-      0,
-      _hookCallback!.nativeFunction,
-      0,
-      0,
-      WINEVENT_OUTOFCONTEXT,
+    _hookCallback ??= NativeCallable<WinEventProc>.listener(
+      _staticHookCallback,
     );
+    final funcPtr = _hookCallback!.nativeFunction;
+
+    if (_hookHandle == 0) {
+      _hookHandle = nativeWindowBridge.setWinEventHook(
+        EVENT_OBJECT_DESTROY,
+        EVENT_OBJECT_LOCATIONCHANGE,
+        0,
+        funcPtr,
+        0,
+        0,
+        WINEVENT_OUTOFCONTEXT,
+      );
+    }
   }
 
   void _stopHook() {
@@ -252,19 +289,40 @@ class NativeOverlayOrchestrator {
     int dwEventThread,
     int dwmsEventTime,
   ) {
-    // [event] is always EVENT_OBJECT_LOCATIONCHANGE based on our settings.
-    if (event != EVENT_OBJECT_LOCATIONCHANGE) return;
-    instance._handleLocationChange(event, hwnd, idObject);
-  }
-
-  void _handleLocationChange(int event, int hwnd, int idObject) {
     // OBJID_WINDOW (0) is the window itself (not a child like a button).
     if (idObject != OBJID_WINDOW) return;
 
-    // Only care about pinned windows
-    final overlayHwnd = _targetToOverlay[hwnd];
-    if (overlayHwnd != null) {
-      _updateOverlayPosition(hwnd, overlayHwnd);
+    instance._handleWindowEnvent(event, hwnd);
+  }
+
+  void _handleWindowEnvent(int event, int targetHwnd) {
+    final overlayHwnd = _targetToOverlay[targetHwnd];
+    if (overlayHwnd == null) return;
+
+    switch (event) {
+      case EVENT_OBJECT_DESTROY:
+        // Remove target when the target window is destroyed
+        removeTarget(targetHwnd);
+        break;
+
+      case EVENT_OBJECT_HIDE:
+        // Hide overlay when target is hidden
+        nativeWindowBridge.showWindow(overlayHwnd, SW_HIDE);
+        break;
+
+      case EVENT_OBJECT_SHOW:
+        // Show overlay when target is shown
+        // Only show overlay when target window is visible
+        if (nativeWindowBridge.isWindowVisible(targetHwnd)) {
+          nativeWindowBridge.showWindow(overlayHwnd, SW_SHOWNOACTIVATE);
+          // Update Overlay Position, just in case
+          _updateOverlayPosition(targetHwnd, overlayHwnd);
+        }
+        break;
+
+      case EVENT_OBJECT_LOCATIONCHANGE:
+        _updateOverlayPosition(targetHwnd, overlayHwnd);
+        break;
     }
   }
 
@@ -285,10 +343,6 @@ class NativeOverlayOrchestrator {
       size,
       SWP_NOACTIVATE | SWP_NOOWNERZORDER,
     );
-  }
-
-  static int _staticWndProc(int hwnd, int msg, int wParam, int lParam) {
-    return DefWindowProc(hwnd, msg, wParam, lParam);
   }
 }
 

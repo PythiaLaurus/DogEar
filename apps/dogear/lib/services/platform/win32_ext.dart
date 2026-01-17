@@ -26,12 +26,33 @@ typedef WinEventProc =
 /// The event ID for location change.
 const int EVENT_OBJECT_LOCATIONCHANGE = 0x800B;
 
+// Event IDs as their names
+const EVENT_OBJECT_DESTROY = 0x8001;
+const EVENT_OBJECT_SHOW = 0x8002;
+const EVENT_OBJECT_HIDE = 0x8003;
+
+/// The event ID for foreground (focus window) change.
+const int EVENT_SYSTEM_FOREGROUND = 0x0003;
+
+/// The event ID for minimize start.
+const int EVENT_SYSTEM_MINIMIZESTART = 0x0016;
+
+/// The event ID for restore minimized window.
+const int EVENT_SYSTEM_MINIMIZEEND = 0x0017;
+
 /// Run callback in current thread (our dart procedure), not in the thread
 /// that triggers the callback (some other thread).
 const int WINEVENT_OUTOFCONTEXT = 0x0000;
 
 /// Means full filled polygon
 const int WINDING = 2;
+
+/// Native poniter for DefWindowProcW in user32.dll.
+/// Used to call DefWindowProcW to avoid isloted calls.
+Pointer<NativeFunction<WNDPROC>> get DefWindowProcWPtr => _DefWindowProcW;
+final _DefWindowProcW = _user32.lookup<NativeFunction<WNDPROC>>(
+  'DefWindowProcW',
+);
 
 /// Native signature for SetWinEventHook in user32.dll.
 ///

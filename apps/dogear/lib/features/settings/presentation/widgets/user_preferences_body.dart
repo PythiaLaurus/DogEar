@@ -6,6 +6,7 @@ import '../../../../core/theme/theme.dart';
 import '../../../../core/widgets/color_picker/color_picker.dart';
 import '../../../../core/widgets/shortcut_recorder.dart';
 import '../../../../core/widgets/theme_model_selector.dart';
+import '../../../topmost_overlay_orchestration/application/topmost_overlay_orchestrator.dart';
 import '../../application/user_preferences.dart';
 import '../../domain/settings_items.dart';
 import '../../domain/user_preferences_state.dart';
@@ -70,17 +71,18 @@ class _UserPreferencesBodyState extends ConsumerState<UserPreferencesBody> {
     ),
   ];
 
-  void _pickColor() {
+  void _pickColor() async {
     final appColors = ref.watch(appColorsProvider);
     final appTextStyles = ref.watch(appTextStylesProvider);
     final userPrefs =
         ref.watch(userPreferencesProvider).value ??
         UserPreferencesState.initialize();
     final userPrefsCtrl = ref.read(userPreferencesProvider.notifier);
+    final orchestrator = ref.read(topmostOverlayOrchestratorProvider.notifier);
 
     int colorSelectedARGB = userPrefs.dogEarColorARGB;
 
-    showDialog(
+    final result = await showDialog<bool>(
       context: context,
       useRootNavigator: false,
       builder: (context) {
@@ -109,13 +111,14 @@ class _UserPreferencesBodyState extends ConsumerState<UserPreferencesBody> {
                 setState(() {
                   colorSelectedARGB = newColorARGB;
                 });
+                orchestrator.updateOverlayColor(color);
               },
             ),
           ),
           actions: [
             TextButton(
               onPressed: () {
-                context.pop();
+                context.pop(true);
                 userPrefsCtrl.updateDogEarColor(colorSelectedARGB);
               },
               child: const Text('Done'),
@@ -124,6 +127,10 @@ class _UserPreferencesBodyState extends ConsumerState<UserPreferencesBody> {
         );
       },
     );
+
+    if (result != true) {
+      userPrefsCtrl.reapplyDogEarColor();
+    }
   }
 
   void _resetUserPrefs() {

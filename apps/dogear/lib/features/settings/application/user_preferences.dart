@@ -1,10 +1,12 @@
+import 'dart:ui' show Color;
+
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../core/hotkeys/hotkeys.dart';
 import '../../../core/storage/storage.dart';
-import '../../../services/platform/native_window_bridge.dart';
 import '../../../services/platform/tray.dart';
+import '../../topmost_overlay_orchestration/application/topmost_overlay_orchestrator.dart';
 import '../domain/user_preferences_state.dart';
 
 part 'user_preferences.g.dart';
@@ -51,10 +53,11 @@ class UserPreferences extends _$UserPreferences {
 
     if (newKey == null) return;
 
+    final orchestrator = ref.read(topmostOverlayOrchestratorProvider.notifier);
     final newHotkeyBinding = HotKeyBinding(
       hotKey: newKey,
       keyDownHandler: (hotkey) {
-        nativeWindowBridge.toggleForegroundWindowTopmost();
+        orchestrator.autoAddRemoveForegroundWindow();
       },
     );
     appHotKeys.register(newHotkeyBinding);
@@ -72,7 +75,17 @@ class UserPreferences extends _$UserPreferences {
   }
 
   void _applyDogEarColor(int newColorARGB) {
-    // TODO:  implement
+    final orchestrator = ref.read(topmostOverlayOrchestratorProvider.notifier);
+    orchestrator.updateOverlayColor(Color(newColorARGB));
+  }
+
+  /// Reapply dog ear color
+  void reapplyDogEarColor() {
+    final prevPrefs = state.value;
+
+    if (prevPrefs == null) return;
+
+    _applyDogEarColor(prevPrefs.dogEarColorARGB);
   }
 
   /// Close to tray

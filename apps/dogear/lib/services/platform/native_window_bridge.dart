@@ -52,6 +52,40 @@ class NativeWindowBridge {
     return result != 0;
   }
 
+  /// [IsWindowVisible].<br>
+  /// Determines the visibility state of the specified window.
+  ///
+  /// [hwnd] A handle to the window to be tested.
+  ///
+  /// Returns true if the specified window has WS_VISIBLE, not minimized, not
+  /// cloaked. Otherwise false.
+  bool isWindowVisible(int hwnd) {
+    // Check WS_VISIBLE first
+    if (IsWindowVisible(hwnd) == 0) return false;
+    // Check WS_MINIMIZE
+    if (IsIconic(hwnd) != 0) return false;
+
+    // Check Cloaked (e.g. virtual desktop, UWP app)
+    final cloakedPtr = calloc<Int32>();
+    try {
+      final hr = DwmGetWindowAttribute(
+        hwnd,
+        DWMWA_CLOAKED,
+        cloakedPtr.cast<Void>(),
+        sizeOf<Int32>(),
+      );
+
+      if (hr == S_OK) {
+        // If it's Cloaked (value is not zero), return false
+        if (cloakedPtr.value != 0) return false;
+      }
+    } finally {
+      calloc.free(cloakedPtr);
+    }
+
+    return true;
+  }
+
   /// Toggles Foreground Window Topmost.
   /// Returns (hwnd, shouldTopmost, isSuccess).<br>
   /// hwnd: The handle of the window.<br>
@@ -80,14 +114,14 @@ class NativeWindowBridge {
   /// [isSuccess]: true if the window was successfully toggled, false otherwise.
   ({bool shouldTopmost, bool isSuccess}) toggleTopmost(int hwnd) {
     final shouldTopmost = !isTopmost(hwnd);
-    final isSuccess = setTopmost(hwnd, topmost: shouldTopmost);
+    final isSuccess = setTopmost(hwnd, shouldTopmost);
 
     return (shouldTopmost: shouldTopmost, isSuccess: isSuccess);
   }
 
   /// Sets or cancel the topmost state of a window.
   /// Returns true if the window was successfully set or canceled as topmost.
-  bool setTopmost(int hwnd, {bool topmost = true}) {
+  bool setTopmost(int hwnd, [bool topmost = true]) {
     final insertAfter = topmost ? HWND_TOPMOST : HWND_NOTOPMOST;
     final flags = SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE;
 
@@ -170,10 +204,9 @@ class NativeWindowBridge {
         CloseHandle(hProcess);
       }
     } finally {
+      _log("getProcessName");
       calloc.free(processIdPtr);
     }
-
-    _log("getProcessName");
 
     return processName.isEmpty ? null : processName;
   }
@@ -217,6 +250,7 @@ class NativeWindowBridge {
       }
       return null;
     } finally {
+      _log("getWindowRect");
       calloc.free(rect);
     }
   }
@@ -275,10 +309,9 @@ class NativeWindowBridge {
         lpPoints[i].y = points[i].y;
       }
 
-      final result = CreatePolygonRgn(lpPoints, points.length, WINDING);
-      _log("createPolygonRgn");
-      return result;
+      return CreatePolygonRgn(lpPoints, points.length, WINDING);
     } finally {
+      _log("createPolygonRgn");
       calloc.free(lpPoints);
     }
   }
@@ -348,6 +381,11 @@ class NativeWindowBridge {
     return result;
   }
 
+  /// Sets the window owner by setting the GWLP_HWNDPARENT window property.
+  void setWindowOwner(int childHwnd, int ownerHwnd) {
+    SetWindowLongPtr(childHwnd, GWLP_HWNDPARENT, ownerHwnd);
+  }
+
   /// [SetLayeredWindowAttributes].<br>
   /// Sets the opacity and transparency color key of a layered window.
   ///
@@ -403,7 +441,7 @@ class NativeWindowBridge {
     final className = lpClassName.toNativeUtf16();
     final windowName = lpWindowName.toNativeUtf16();
     try {
-      final result = CreateWindowEx(
+      return CreateWindowEx(
         dwExStyle,
         className,
         windowName,
@@ -417,11 +455,8 @@ class NativeWindowBridge {
         hInstance,
         lpParam,
       );
-
-      _log("createWindowEx");
-
-      return result;
     } finally {
+      _log("createWindowEx");
       calloc.free(className);
       calloc.free(windowName);
     }
@@ -439,6 +474,7 @@ class NativeWindowBridge {
     try {
       return GetModuleHandle(name);
     } finally {
+      _log("getModuleHandle");
       calloc.free(name);
     }
   }
@@ -498,13 +534,49 @@ class NativeWindowBridge {
     final ptr = calloc<WNDCLASS>();
     try {
       ptr.ref = lpWndClass;
-      final atom = RegisterClass(ptr);
-
-      _log('registerClass');
-
-      return atom;
+      return RegisterClass(ptr);
     } finally {
+      _log('registerClass');
       calloc.free(ptr);
+    }
+  }
+
+  /// [UnregisterClass].<br>
+  /// Unregisters a window class created by the [registerClass] function.
+  ///
+  /// [lpClassName] is the name of the window class to be unregistered.<br>
+  /// [hInstance] is the handle to the module that created the class.<br>
+  ///
+  /// Returns true if successful; otherwise, returns false.
+  bool unregisterClass(String lpClassName, int hInstance) {
+    final className = lpClassName.toNativeUtf16();
+    try {
+      return UnregisterClass(className, hInstance) != 0;
+    } finally {
+      _log('unregisterClass');
+      calloc.free(className);
+    }
+  }
+
+  /// [GetClassName].<br>
+  /// Retrieves the window class name of the specified window.
+  ///
+  /// [hwnd] is the handle to the window whose class name is to be retrieved.
+  ///
+  /// Returns the window class name if successful; otherwise null.
+  String? getClassName(int hwnd) {
+    final maxCount = 256;
+    final buffer = calloc<Uint16>(maxCount).cast<Utf16>();
+
+    try {
+      final result = GetClassName(hwnd, buffer, maxCount);
+
+      if (result == 0) return null;
+
+      return buffer.toDartString();
+    } finally {
+      _log('getClassName');
+      calloc.free(buffer);
     }
   }
 

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../topmost_overlay_orchestration/application/topmost_overlay_orchestrator.dart';
 import 'widgets/user_preferences_body.dart';
 
 class SettingsView extends ConsumerStatefulWidget {
@@ -34,8 +35,9 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
     );
   }
 
-  Widget _statusCard({int pinnedWindowsCount = 0}) {
+  Widget _statusCard() {
     final appTextStyles = ref.watch(appTextStylesProvider);
+    final orchestratorState = ref.watch(topmostOverlayOrchestratorProvider);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -57,7 +59,7 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Pinned Windows: $pinnedWindowsCount',
+            'Pinned Windows: ${orchestratorState.topmostWindows.length}',
             style: appTextStyles.body,
           ),
           const SizedBox(height: 8),
