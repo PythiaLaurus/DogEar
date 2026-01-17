@@ -15,9 +15,12 @@ class TopmostOverlayOrchestrator extends _$TopmostOverlayOrchestrator {
   @override
   TopmostOverlayOrchestratorState build() {
     nativeOverlayOrchestrator.init();
+    nativeOverlayOrchestrator.onWindowDestroyed = _handleNativeWindowDestroyed;
 
     ref.onDispose(() {
       dispose();
+      nativeOverlayOrchestrator.onWindowDestroyed = null;
+      nativeOverlayOrchestrator.dispose();
     });
 
     return TopmostOverlayOrchestratorState();
@@ -30,8 +33,7 @@ class TopmostOverlayOrchestrator extends _$TopmostOverlayOrchestrator {
     if (!result.isSuccess) return;
 
     if (result.shouldTopmost) {
-      nativeOverlayOrchestrator.addTarget(result.hwnd);
-      final overlayHwnd = nativeOverlayOrchestrator.getOverlayHwnd(result.hwnd);
+      final overlayHwnd = nativeOverlayOrchestrator.addTarget(result.hwnd);
       if (overlayHwnd == null) return;
 
       final processName = nativeWindowBridge.getProcessName(result.hwnd);
@@ -43,10 +45,10 @@ class TopmostOverlayOrchestrator extends _$TopmostOverlayOrchestrator {
         processName: processName ?? _kUnkown,
       );
 
-      _updateTopmostWindow(topmostWindow);
+      _addToState(topmostWindow);
     } else {
       nativeOverlayOrchestrator.removeTarget(result.hwnd);
-      _removeTopmostWindow(result.hwnd);
+      _removefromState(result.hwnd);
     }
   }
 
@@ -55,25 +57,25 @@ class TopmostOverlayOrchestrator extends _$TopmostOverlayOrchestrator {
     nativeOverlayOrchestrator.updateOverlayColor(color);
   }
 
-  void _updateTopmostWindow(TopmostWindow topmostWindow) {
+  void _addToState(TopmostWindow topmostWindow) {
     state = state.copyWith(
       topmostWindows: [...state.topmostWindows, topmostWindow],
     );
   }
 
-  void _removeTopmostWindow(int hwnd) {
-    state = state.copyWith(
-      topmostWindows: [
-        for (final window in state.topmostWindows)
-          if (window.hwnd != hwnd) window,
-      ],
-    );
+  void _removefromState(int hwnd) {
+    final newList = List<TopmostWindow>.from(state.topmostWindows)
+      ..removeWhere((w) => w.hwnd == hwnd);
+    state = state.copyWith(topmostWindows: newList);
+  }
+
+  void _handleNativeWindowDestroyed(int hwnd) {
+    _removefromState(hwnd);
   }
 
   void dispose() {
     for (final window in state.topmostWindows) {
       nativeWindowBridge.setTopmost(window.hwnd, false);
     }
-    nativeOverlayOrchestrator.dispose();
   }
 }

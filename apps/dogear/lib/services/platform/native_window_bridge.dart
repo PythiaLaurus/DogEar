@@ -279,22 +279,6 @@ class NativeWindowBridge {
     return result != 0;
   }
 
-  /// [CreateSolidBrush].<br>
-  /// Creates a logical brush that has the specified solid color.
-  ///
-  /// [color] The color of the brush in COLORREF format (0x00BBGGRR).
-  ///
-  /// Returns a handle (HBRUSH) that identifies the brush if successful.
-  /// Returns 0 (NULL) if the function fails.
-  ///
-  /// IMPORTANT: When you are finished with the brush, you must delete it
-  /// by calling [deleteObject] to release system resources.
-  int createSolidBrush(int color) {
-    final result = CreateSolidBrush(color);
-    _log("createSolidBrush");
-    return result;
-  }
-
   /// Creates a native Win32 Region handle (HRGN) from Dart points.
   ///
   /// Returns a handle to the region (HRGN) if successful, or 0 on failure.

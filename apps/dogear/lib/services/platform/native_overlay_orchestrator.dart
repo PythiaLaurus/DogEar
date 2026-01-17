@@ -14,17 +14,16 @@ class NativeOverlayOrchestrator {
 
   // Configurations
   // Class name
-  static const String _kClassNamePrefix =
-      "RobotMachete_DogEar_Triangle_Overlay_";
+  static const String _kClassNamePrefix = "RobotMachete_DogEar_Overlay_";
   static final String kClassName =
       "$_kClassNamePrefix${DateTime.now().millisecondsSinceEpoch}";
-  // Dog ear size
-  static const dogEarSize = 20;
-  // Dog ear (Triangle) shape
-  static const dogEarPoints = [
+  // Default overlay size (side length of triangle)
+  static const defaultOverlaySize = 20;
+  // Default overlay shape (a triangle)
+  static const defaultOverlayPoints = [
     math.Point(0, 0),
-    math.Point(dogEarSize, 0),
-    math.Point(dogEarSize, dogEarSize),
+    math.Point(defaultOverlaySize, 0),
+    math.Point(defaultOverlaySize, defaultOverlaySize),
   ];
 
   /// Is [init] function called.
@@ -38,12 +37,20 @@ class NativeOverlayOrchestrator {
   int _brushHandle = 0;
   NativeCallable<WinEventProc>? _hookCallback;
 
+  /// This will be called after a target window is destroyed (closed).
+  ///
+  /// [targetHwnd] is already destroyed when this function is called,
+  /// so it can't be used to implement any native logic.
+  void Function(int targetHwnd)? onWindowDestroyed;
+
   int? getOverlayHwnd(int targetHwnd) => _targetToOverlay[targetHwnd];
   int? getTargetHwnd(int overlayHwnd) => _overlayToTarget[overlayHwnd];
 
   /// Adds a new target window to be tracked.
-  void addTarget(int targetHwnd) {
-    if (_shouldIgnoreWindow(targetHwnd)) return;
+  ///
+  /// Returns the overlay window handle if successful, or null if failed.
+  int? addTarget(int targetHwnd) {
+    if (_shouldIgnoreWindow(targetHwnd)) return null;
 
     if (!_isClassRegistered) {
       init();
@@ -79,7 +86,7 @@ class NativeOverlayOrchestrator {
       hInst,
       nullptr,
     );
-    if (overlayHwnd == 0) return;
+    if (overlayHwnd == 0) return null;
 
     // Set the window's opacity to 255 (100% not transparent) but ignoring the
     // color parameter.
@@ -108,7 +115,7 @@ class NativeOverlayOrchestrator {
     // will be transferred to the system, so it can't be reused.
     nativeWindowBridge.setWindowRgn(
       overlayHwnd,
-      nativeWindowBridge.createPolygonRgn(dogEarPoints),
+      nativeWindowBridge.createPolygonRgn(defaultOverlayPoints),
       true,
     );
 
@@ -119,6 +126,8 @@ class NativeOverlayOrchestrator {
     // Set owner
     // This makes windows automatically manages the lifetime of the overlay.
     nativeWindowBridge.setWindowOwner(overlayHwnd, targetHwnd);
+
+    return overlayHwnd;
   }
 
   /// Ignore windows that are already tracked, created by ourself, and [ToolWindow].
@@ -136,6 +145,8 @@ class NativeOverlayOrchestrator {
     int style = GetWindowLongPtr(hwnd, GWL_EXSTYLE);
     if ((style & WS_EX_TOOLWINDOW) != 0) return true;
 
+    if (!nativeWindowBridge.isWindowVisible(hwnd)) return true;
+
     return false;
   }
 
@@ -152,6 +163,11 @@ class NativeOverlayOrchestrator {
     }
   }
 
+  /// Updates overlay shape.
+  void updateOverlayShapeAndAlignment() {
+    // TODO: Implement updateOverlayShapeAndAlignment
+  }
+
   /// Updates overlay color.
   void updateOverlayColor(Color color) {
     final r = (color.r * 255).toInt();
@@ -161,13 +177,13 @@ class NativeOverlayOrchestrator {
     final colorRef = r | (g << 8) | (b << 16);
 
     // Create new brush first
-    final newBrush = nativeWindowBridge.createSolidBrush(colorRef);
+    final newBrush = CreateSolidBrush(colorRef);
 
     // Set new brush to class
     if (_targetToOverlay.isNotEmpty) {
       final hwnd = _targetToOverlay.values.first;
       // GCLP_HBRBACKGROUND is -10
-      nativeWindowBridge.setClassLongPtr(hwnd, -10, newBrush);
+      nativeWindowBridge.setClassLongPtr(hwnd, GCLP_HBRBACKGROUND, newBrush);
 
       // Force redraw
       for (final h in _targetToOverlay.values) {
@@ -303,6 +319,7 @@ class NativeOverlayOrchestrator {
       case EVENT_OBJECT_DESTROY:
         // Remove target when the target window is destroyed
         removeTarget(targetHwnd);
+        onWindowDestroyed?.call(targetHwnd);
         break;
 
       case EVENT_OBJECT_HIDE:
@@ -330,7 +347,7 @@ class NativeOverlayOrchestrator {
     final rect = nativeWindowBridge.getWindowRect(targetHwnd);
     if (rect == null) return;
 
-    const size = 20;
+    const size = defaultOverlaySize;
     final x = rect.left + rect.width - size;
     final y = rect.top;
 
