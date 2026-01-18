@@ -5,7 +5,17 @@
 
 **DogEar reimagines** how you manage a cluttered workspace by bringing the physical intuition of "book-folding" to the Windows desktop. It transforms your multi-window workflow by allowing you to fold a corner of any application—creating a visual **"DogEar" bookmark** that stays pinned to your target window, ensuring you never lose track of your active tasks again.
 
+<div align="center">
+    <img src="./screenshots/function_001.png" width="127" alt="DogEar pinned on VS Code">
+    <p><i>Example: A "DogEar" pinned to VS Code for instant identification.</i></p>
+</div>
+
 **Why DogEar?** In a sea of dozens of open windows, traditional taskbars and tab-switchers often fall short. DogEar provides a **persistent visual anchor** for your most important work. Whether you are tracking a critical document, locking a reference image, or managing complex multitasking, DogEar ensures your prioritized windows are instantly identifiable and always accessible.
+
+<div align="center">
+    <img src="./screenshots/app_001.png" height="400" alt="DogEar Interface Preview">
+    <p><i>The elegant DogEar interface featuring the signature Warm Brown theme.</i></p>
+</div>
 
 ---
 
@@ -18,6 +28,12 @@
 * **🚀 Native Integration**
     * Leverages high-performance Win32 hooks to ensure markers follow their target windows flawlessly across the screen.
     * Built with Flutter and dart:ffi for a seamless, native experience that respects your system resources.
+* **✨ Aesthetic Personalization**
+    * Customize DogEar colors to match your workspace preferences.
+    <div align="center">
+        <img src="./screenshots/app_002.png" height="400" alt="DogEar Color Customization">
+        <p><i>Tailor your experience: Customize DogEar colors to complement your creative environment.</i></p>
+    </div>
 
 **Note on Permissions:** To "dog-ear" windows running with Administrator privileges (e.g., Task Manager or elevated Command Prompts), **DogEar** itself must be launched with **Administrator privileges** due to Windows UIPI security constraints.
 
