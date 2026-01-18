@@ -121,11 +121,11 @@ class NativeOverlayOrchestrator {
 
     _updateOverlayPosition(targetHwnd, overlayHwnd);
 
-    SetForegroundWindow(targetHwnd);
-
     // Set owner
     // This makes windows automatically manages the lifetime of the overlay.
     nativeWindowBridge.setWindowOwner(overlayHwnd, targetHwnd);
+
+    SetForegroundWindow(targetHwnd);
 
     return overlayHwnd;
   }
