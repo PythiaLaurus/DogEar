@@ -56,7 +56,7 @@ class MyApp extends ConsumerWidget {
 
     final baseTheme = ThemeData.from(
       colorScheme: ColorScheme.fromSeed(
-        seedColor: Colors.blue,
+        seedColor: Colors.brown,
         brightness: brightness,
       ),
     );
@@ -66,9 +66,6 @@ class MyApp extends ConsumerWidget {
       title: AppConfig.appName,
       routerConfig: router,
       theme: baseTheme.copyWith(
-        colorScheme: baseTheme.colorScheme.copyWith(
-          primary: baseTheme.colorScheme.primary.lighten(ref),
-        ),
         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
         listTileTheme: baseTheme.listTileTheme.copyWith(
           contentPadding: EdgeInsets.fromLTRB(12, 0, 0, 0),

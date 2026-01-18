@@ -11,7 +11,8 @@ part 'theme.g.dart';
 class AppTextStyles {
   final Ref ref;
   late final AppColors colors;
-  static const String _fontFamily = "monospace";
+  static const String _fontFamily = "NotoSans";
+  static const String _fontFamilyFallback = "NotoSansSC";
   AppTextStyles(this.ref) {
     colors = ref.watch(appColorsProvider);
   }
@@ -23,6 +24,7 @@ class AppTextStyles {
       fontWeight: FontWeight.normal,
       color: colors.textPrimary,
       fontFamily: _fontFamily,
+      fontFamilyFallback: [_fontFamilyFallback],
     );
   }
 
@@ -66,11 +68,9 @@ class AppTextStyles {
 // Light theme colors
 class _LightColors extends AppColors {
   @override
-  Color get primary => const Color(0xFFECEEF4);
+  Color get primary => const Color.fromRGBO(243, 243, 243, 1);
   @override
-  Color get background => const Color(0xFFF8F9FF);
-  @override
-  Color get icon => const Color.fromRGBO(36, 36, 36, 1);
+  Color get background => const Color(0xFFFFFFFF);
   @override
   Color get onHover => const Color.fromRGBO(237, 237, 237, 1);
   @override
@@ -90,8 +90,6 @@ class _DarkColors extends AppColors {
   @override
   Color get background => const Color(0xFF1F1F1F);
   @override
-  Color get icon => Colors.white;
-  @override
   Color get onHover => const Color(0xFF333333);
   @override
   Color get onFocus => const Color(0xFF444444);
@@ -107,13 +105,11 @@ class _DarkColors extends AppColors {
 abstract class AppColors {
   Color get primary;
   Color get background;
-  Color get icon;
   Color get onHover;
   Color get onFocus;
   Color get widgetDisabled;
   Color get textPrimary;
   Color get textDisabled;
-  Color get highlight => Colors.blue[800]!;
 
   WidgetStateProperty<Color?> stateResolved({
     Color? hoverColor,

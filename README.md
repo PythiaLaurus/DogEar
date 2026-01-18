@@ -37,12 +37,17 @@ It leverages `dart:ffi` to interact directly with low-level Windows APIs (`user3
     flutter pub get
     ```
 
-2.  **Run in Debug mode**
+2.  **Generate files**
+    ```bash
+    dart run build_runner build
+    ```
+
+3.  **Run in Debug mode**
     ```bash
     flutter run -d windows
     ```
 
-3.  **Build Release version**
+4.  **Build Release version**
     ```bash
     flutter build windows
     ```

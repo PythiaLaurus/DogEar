@@ -158,7 +158,10 @@ class _UserPreferencesBodyState extends ConsumerState<UserPreferencesBody> {
                 userPrefsCtrl.resetUserPrefs();
               },
               style: ButtonStyle(visualDensity: VisualDensity.comfortable),
-              child: Text('Confirm', style: appTextStyles.body.alertColor()),
+              child: Text(
+                'Confirm',
+                style: appTextStyles.bodyLarge.alertColor(),
+              ),
             ),
             TextButton(
               onPressed: () {
@@ -166,7 +169,7 @@ class _UserPreferencesBodyState extends ConsumerState<UserPreferencesBody> {
               },
               child: Text(
                 'Cancel',
-                style: appTextStyles.body.contextColor(context),
+                style: appTextStyles.bodyLarge.contextColor(context),
               ),
             ),
           ],

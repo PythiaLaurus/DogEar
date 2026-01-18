@@ -44,7 +44,7 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
       decoration: BoxDecoration(
         color: Theme.of(
           context,
-        ).colorScheme.primaryContainer.withValues(alpha: 0.3),
+        ).colorScheme.primaryContainer.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(

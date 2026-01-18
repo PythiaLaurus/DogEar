@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../configs/app_config.dart';
 import '../../../core/theme/theme.dart';
 import '../../../core/widgets/normal_app_bar.dart';
 
@@ -23,12 +24,9 @@ class _ShellViewState extends ConsumerState<ShellView> {
       appBar: NormalAppBar(
         title: Row(
           children: [
-            const Icon(Icons.push_pin, size: 20),
+            Image.asset(AppConfig.iconPath, width: 22, height: 22),
             const SizedBox(width: 12),
-            Text(
-              'Dog Ear Settings',
-              style: appTextStyles.body.copyWith(fontWeight: FontWeight.bold),
-            ),
+            Text('DogEar Settings', style: appTextStyles.body.bold()),
           ],
         ),
       ),

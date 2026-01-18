@@ -9,7 +9,7 @@ class AppTray {
   AppTray._();
   static final instance = AppTray._();
 
-  static const String iconPath = 'assets/system/tray.ico';
+  static const String iconPath = TrayConfig.iconPath;
 
   bool get isInitialized => trayManager.hasListeners;
 
