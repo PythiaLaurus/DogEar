@@ -3,25 +3,23 @@
 [![Flutter](https://img.shields.io/badge/Flutter-Windows-blue.svg)](https://flutter.dev)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
-**DogEar** is a high-performance Windows desktop overlay application built with Flutter. 
+**DogEar reimagines** how you manage a cluttered workspace by bringing the physical intuition of "book-folding" to the Windows desktop. It transforms your multi-window workflow by allowing you to fold a corner of any application—creating a visual **"DogEar" bookmark** that stays pinned to your target window, ensuring you never lose track of your active tasks again.
 
-It leverages `dart:ffi` to interact directly with low-level Windows APIs (`user32.dll`, `gdi32.dll`), breaking the limits of standard rectangular windows to achieve **custom polygonal shapes (triangle/dog-ear)**, pixel-perfect transparency, and native window management.
+**Why DogEar?** In a sea of dozens of open windows, traditional taskbars and tab-switchers often fall short. DogEar provides a **persistent visual anchor** for your most important work. Whether you are tracking a critical document, locking a reference image, or managing complex multitasking, DogEar ensures your prioritized windows are instantly identifiable and always accessible.
 
 ---
 
 ## ✨ Key Features
 
-* **📐 Custom Shaped Window**
-    * Physical window clipping using GDI32 `CreatePolygonRgn` and `SetWindowRgn`.
-    * Supports complex geometries (like triangles); mouse events pass through non-shape areas.
-* **🚀 Optimized FFI Bridge**
-    * Uses `static final` for pre-loading DLLs to minimize runtime overhead.
-    * Strict manual memory management for pointers and native handles (zero GC pressure).
-* **🎨 Native Rendering Control**
-    * Pixel-level transparency via `SetLayeredWindowAttributes`.
-    * Flicker-free updates using targeted `Redraw` and `UpdateWindow` strategies.
-* **🛡️ Robust Resource Management**
-    * Built-in lifecycle management for GDI objects (Regions, Brushes) to prevent memory leaks.
+* **📐 Intuitive Tagging**
+    * Instantly "dog-ear" any active window with a customizable keyboard shortcut.
+* **🎨 Zero-Interference Overlay**
+    * Achieves pixel-perfect transparency and custom polygonal shapes (triangles) that stay on top without stealing focus or blocking your content.
+* **🚀 Native Integration**
+    * Leverages high-performance Win32 hooks to ensure markers follow their target windows flawlessly across the screen.
+    * Built with Flutter and dart:ffi for a seamless, native experience that respects your system resources.
+
+**Note on Permissions:** To "dog-ear" windows running with Administrator privileges (e.g., Task Manager or elevated Command Prompts), **DogEar** itself must be launched with **Administrator privileges** due to Windows UIPI security constraints.
 
 ## 🚀 Getting Started
 
