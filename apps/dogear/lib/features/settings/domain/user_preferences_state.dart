@@ -9,7 +9,7 @@ part 'user_preferences_state.g.dart';
 abstract class UserPreferencesState with _$UserPreferencesState {
   const factory UserPreferencesState({
     HotKey? shortcut,
-    @Default(0xFFBCAAA4) int dogEarColorARGB,
+    @Default(0xFF8F4C33) int dogEarColorARGB,
     @Default(true) bool closeToTray,
     @Default(true) bool showTrayIcon,
   }) = _UserPreferencesState;
