@@ -1,4 +1,5 @@
-# This file is used to update icons in the project.
+# scripts/Update-Icons.ps1
+# This script is used to update icons in the project.
 
 # Source paths
 $VisualResourcesDir = Join-Path $PSScriptRoot  "../visuals"
@@ -26,7 +27,7 @@ $TargetWindowsAppIcon = Join-Path $WindowsResourceDir $appIconName
 
 # Check if the source file exists
 if (!(Test-Path $SourceAppIcon)) {
-    Write-Error "Error: can't find $appIconName at $VisualResourcesDir"
+    Write-Error "Error: $appIconName not found at at $VisualResourcesDir"
     exit
 }
 
