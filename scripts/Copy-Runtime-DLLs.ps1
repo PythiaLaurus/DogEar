@@ -1,5 +1,5 @@
 # scripts/Copy-Runtime-DLLs.ps1
-# This script is used to copy MSVC runtime files to the build directory.
+# Copies MSVC runtime files to the build directory.
 
 param (
     [string]$BuildDir

@@ -21,6 +21,28 @@
 
 **Note on Permissions:** To "dog-ear" windows running with Administrator privileges (e.g., Task Manager or elevated Command Prompts), **DogEar** itself must be launched with **Administrator privileges** due to Windows UIPI security constraints.
 
+---
+
+## 📥 Installation & Security
+
+### 🛡️ Note on Windows SmartScreen
+Because DogEar is an independent open-source project, the installer is **not digitally signed** with a commercial certificate (which costs hundreds of dollars annually). 
+
+When you run the installer, Windows may display a blue **"Windows protected your PC"** warning. 
+* **To proceed:** Click **"More info"** and then **"Run anyway"**.
+* **Why this happens:** This is a standard security measure for apps that haven't yet established a global reputation with Microsoft. 
+* **Trust:** You can verify the integrity of the app by checking the open-source code or building it from source yourself.
+
+### 🔍 Verification
+To ensure the installer hasn't been tampered with, we provide the **SHA-256 checksum** for every official architect in the [Releases](https://github.com/PythiaLaurus/DogEar/releases) page. 
+
+You can verify the file integrity by running this command in PowerShell:
+```powershell
+Get-FileHash <path_to_installer> -Algorithm SHA256
+```
+
+---
+
 ## 🚀 Getting Started
 
 ### Prerequisites

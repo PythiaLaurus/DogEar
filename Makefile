@@ -1,18 +1,35 @@
 # Paths
 # App
-APP_DIR = apps/dogear
+APP_DIR := apps/dogear
 FLUTTER_BUILD_DIR = $(APP_DIR)/build/windows/x64/runner/Release
 # System
-SYS_DIR = C:/Windows/System32
+SYS_DIR := C:/Windows/System32
+# Distribution
+DIST_DIR := dist
 
 # Scripts
-SCRIPTS_DIR = scripts
+SCRIPTS_DIR := scripts
 # Update icons
 UPDATE_ICONS_SCRIPT = $(SCRIPTS_DIR)/Update-Icons.ps1
 # Copy Runtime DLLs
 COPY_RUNTIME_DLLs_SCRIPT = $(SCRIPTS_DIR)/Copy-Runtime-DLLs.ps1
 # Package
 PACKAGE_SCRIPT = $(SCRIPTS_DIR)/Setup.iss
+GET_VERSION_SCRIPT = $(SCRIPTS_DIR)/Get-Version.ps1
+APP_VER = $(shell powershell -NoProfile -ExecutionPolicy Bypass -File $(GET_VERSION_SCRIPT))
+APP_NAME := DogEar
+PLATFORM := Windows
+ARCH := x64
+SETUP_OUT_BASE_FILENAME = $(APP_NAME)_$(APP_VER)_$(PLATFORM)_$(ARCH)_Setup
+# Generate Release Note
+GEN_RELEASE_NOTE_SCRIPT = $(SCRIPTS_DIR)/Gen-Release-Note.ps1
+RELEASE_NOTE_BASE_FILENAME = $(APP_NAME)_$(APP_VER)_Release_Note
+
+# Publish
+TAG_NAME = v$(APP_VER)
+RELEASE_TITLE = "DogEar $(APP_VER)"
+NOTES_FILE = $(DIST_DIR)/$(RELEASE_NOTE_BASE_FILENAME).md
+EXE_FILE = $(DIST_DIR)/$(SETUP_OUT_BASE_FILENAME).exe
 
 build-flutter:
 	@echo "Starting Flutter Build..."
@@ -26,12 +43,33 @@ copy-runtime:
 		-BuildDir $(FLUTTER_BUILD_DIR)
 
 package:
-	@echo "Packaging..."
-	ISCC $(PACKAGE_SCRIPT)
+	@echo "Packaging $(SETUP_OUT_BASE_FILENAME).exe"
+	ISCC /DMyAppVersion="$(APP_VER)" \
+		/DOutputBaseFilename="$(SETUP_OUT_BASE_FILENAME)" \
+		/O"$(DIST_DIR)" \
+		$(PACKAGE_SCRIPT)
+	$(MAKE) gen-release-note
+
+gen-release-note:
+	@echo "Generating Release Note..."
+	@powershell -ExecutionPolicy Bypass -File $(GEN_RELEASE_NOTE_SCRIPT) \
+		-Version "$(APP_VER)" \
+		-DistDir "$(DIST_DIR)" \
+		-FileName "$(SETUP_OUT_BASE_FILENAME).exe" \
+		-ReleaseNoteFilename "$(RELEASE_NOTE_BASE_FILENAME).md"
+
+publish:
+	@echo "Publishing to GitHub Release..."
+	gh release create $(TAG_NAME) "$(EXE_FILE)" \
+		--title $(RELEASE_TITLE) \
+		--notes-file "$(NOTES_FILE)"
 
 update-icons:
 	@echo "Updating Icons..."
 	powershell -ExecutionPolicy Bypass -File $(UPDATE_ICONS_SCRIPT)
+
+echo-version:
+	@echo "$(APP_VER)"
 
 clean:
 	cd $(APP_DIR) && flutter clean

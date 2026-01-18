@@ -2,10 +2,18 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "DogEar"
-#define MyAppVersion "0.1.0"
+
+#ifndef MyAppVersion
+  #define MyAppVersion "0.0.0"
+#endif
+
+#ifndef OutputBaseFilename
+  #define OutputBaseFilename "mysetup"
+#endif
+
 #define MyAppPublisher "Robot Machete"
-#define MyAppURL "https://www.example.com/"
-#define MyAppExeName "dogear.exe"
+#define MyAppURL ""
+#define MyAppExeName "DogEar.exe"
 
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application. Do not use the same AppId value in installers for other applications.
@@ -13,6 +21,9 @@
 AppId={{8712D6B7-CF35-4DB6-8DF3-68507CA1933C}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
+VersionInfoVersion={#MyAppVersion}
+VersionInfoCopyright=Copyright (C) 2026 Robot Machate. All rights reserved.
+VersionInfoOriginalFileName={#OutputBaseFilename}.exe
 ;AppVerName={#MyAppName} {#MyAppVersion}
 AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
@@ -31,9 +42,9 @@ ArchitecturesInstallIn64BitMode=x64compatible
 DisableProgramGroupPage=yes
 ; Uncomment the following line to run in non administrative install mode (install for current user only).
 ;PrivilegesRequired=lowest
-OutputDir=F:\Projects\DogEar\scripts
-OutputBaseFilename=setup
-SetupIconFile=F:\Projects\DogEar\visuals\app_icon.ico
+OutputDir=..\dist
+OutputBaseFilename={#OutputBaseFilename}
+SetupIconFile=..\visuals\app_icon.ico
 SolidCompression=yes
 WizardStyle=modern
 
@@ -44,16 +55,16 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-Source: "F:\Projects\DogEar\apps\dogear\build\windows\x64\runner\Release\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "F:\Projects\DogEar\apps\dogear\build\windows\x64\runner\Release\flutter_windows.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "F:\Projects\DogEar\apps\dogear\build\windows\x64\runner\Release\hotkey_manager_windows_plugin.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "F:\Projects\DogEar\apps\dogear\build\windows\x64\runner\Release\msvcp140.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "F:\Projects\DogEar\apps\dogear\build\windows\x64\runner\Release\screen_retriever_windows_plugin.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "F:\Projects\DogEar\apps\dogear\build\windows\x64\runner\Release\tray_manager_plugin.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "F:\Projects\DogEar\apps\dogear\build\windows\x64\runner\Release\vcruntime140.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "F:\Projects\DogEar\apps\dogear\build\windows\x64\runner\Release\vcruntime140_1.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "F:\Projects\DogEar\apps\dogear\build\windows\x64\runner\Release\window_manager_plugin.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "F:\Projects\DogEar\apps\dogear\build\windows\x64\runner\Release\data\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\apps\dogear\build\windows\x64\runner\Release\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\apps\dogear\build\windows\x64\runner\Release\flutter_windows.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\apps\dogear\build\windows\x64\runner\Release\hotkey_manager_windows_plugin.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\apps\dogear\build\windows\x64\runner\Release\msvcp140.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\apps\dogear\build\windows\x64\runner\Release\screen_retriever_windows_plugin.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\apps\dogear\build\windows\x64\runner\Release\tray_manager_plugin.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\apps\dogear\build\windows\x64\runner\Release\vcruntime140.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\apps\dogear\build\windows\x64\runner\Release\vcruntime140_1.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\apps\dogear\build\windows\x64\runner\Release\window_manager_plugin.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\apps\dogear\build\windows\x64\runner\Release\data\*"; DestDir: "{app}\data"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]

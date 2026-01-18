@@ -1,5 +1,5 @@
 # scripts/Update-Icons.ps1
-# This script is used to update icons in the project.
+# Updates icons in the project.
 
 # Source paths
 $VisualResourcesDir = Join-Path $PSScriptRoot  "../visuals"
