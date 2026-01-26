@@ -37,11 +37,6 @@ build-flutter:
 	$(MAKE) copy-runtime
 	@echo "Flutter Build Complete!"
 
-copy-runtime:
-	@echo "Injecting MSVC Runtimes into Release folder..."
-	powershell -ExecutionPolicy Bypass -File $(COPY_RUNTIME_DLLs_SCRIPT) \
-		-BuildDir $(FLUTTER_BUILD_DIR)
-
 package:
 	@echo "Packaging $(SETUP_OUT_BASE_FILENAME).exe"
 	ISCC /DMyAppVersion="$(APP_VER)" \
@@ -49,14 +44,6 @@ package:
 		/O"$(DIST_DIR)" \
 		$(PACKAGE_SCRIPT)
 	$(MAKE) gen-release-note
-
-gen-release-note:
-	@echo "Generating Release Note..."
-	@powershell -ExecutionPolicy Bypass -File $(GEN_RELEASE_NOTE_SCRIPT) \
-		-Version "$(APP_VER)" \
-		-DistDir "$(DIST_DIR)" \
-		-FileName "$(SETUP_OUT_BASE_FILENAME).exe" \
-		-ReleaseNoteFilename "$(RELEASE_NOTE_BASE_FILENAME).md"
 
 publish:
 	@echo "Publishing to GitHub Release..."
@@ -67,6 +54,21 @@ publish:
 update-icons:
 	@echo "Updating Icons..."
 	powershell -ExecutionPolicy Bypass -File $(UPDATE_ICONS_SCRIPT)
+
+# This will run automatically in [package].
+gen-release-note:
+	@echo "Generating Release Note..."
+	@powershell -ExecutionPolicy Bypass -File $(GEN_RELEASE_NOTE_SCRIPT) \
+		-Version "$(APP_VER)" \
+		-DistDir "$(DIST_DIR)" \
+		-FileName "$(SETUP_OUT_BASE_FILENAME).exe" \
+		-ReleaseNoteFilename "$(RELEASE_NOTE_BASE_FILENAME).md"
+
+# This will run automatically in [build-flutter].
+copy-runtime:
+	@echo "Injecting MSVC Runtimes into Release folder..."
+	powershell -ExecutionPolicy Bypass -File $(COPY_RUNTIME_DLLs_SCRIPT) \
+		-BuildDir $(FLUTTER_BUILD_DIR)
 
 echo-version:
 	@echo "$(APP_VER)"

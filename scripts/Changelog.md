@@ -1,9 +1,6 @@
 ### 🚀 What's New
 
-- **Window Pinning**: Core functionality implemented. You can now toggle "Always on Top" for any window using global hotkeys.
-- **Customization**: Added support for personalizing **DogEar** colors to suit your workspace preferences.
-- **Theme**: Introduced the **Warm Brown** theme as the default application skin for a cozy and focused experience.
+- **Targeting Logic**: Refined window selection. The "Always on Top" toggle now targets the **window directly under your mouse cursor** instead of just the foreground window, allowing for faster and more intuitive pinning.
 
 ### 🛠️ Improvements
-- Initial release of the Windows distribution.
-- Optimized backend interaction between Flutter and Windows APIs for window management.
+- **Elevated Execution**: The application now defaults to **Administrator privileges**. This ensures seamless "Always on Top" functionality for all windows, including those running as Administrator (e.g., Task Manager, Command Prompt, or installers), without requiring manual "Run as Administrator" each time.
