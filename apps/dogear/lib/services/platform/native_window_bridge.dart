@@ -86,7 +86,31 @@ class NativeWindowBridge {
     return true;
   }
 
-  /// Toggles Foreground Window Topmost.
+  /// Toggles window under cursor topmost.
+  ///
+  /// Returns (hwnd, shouldTopmost, isSuccess).<br>
+  /// hwnd: The handle of the window.<br>
+  /// shouldTopmost: true if the window should be topmost, false otherwise.<br>
+  /// isSuccess: true if the window was successfully toggled, false otherwise.
+  ({int hwnd, bool shouldTopmost, bool isSuccess})
+  toggleUnderCursorWindowTopmost() {
+    final hwnd = getUnderCursorWindowHandle();
+
+    if (hwnd == 0) {
+      return (hwnd: 0, shouldTopmost: false, isSuccess: false);
+    }
+
+    final result = toggleTopmost(hwnd);
+
+    return (
+      hwnd: hwnd,
+      shouldTopmost: result.shouldTopmost,
+      isSuccess: result.isSuccess,
+    );
+  }
+
+  /// Toggles foreground window topmost.
+  ///
   /// Returns (hwnd, shouldTopmost, isSuccess).<br>
   /// hwnd: The handle of the window.<br>
   /// shouldTopmost: true if the window should be topmost, false otherwise.<br>
@@ -142,13 +166,52 @@ class NativeWindowBridge {
     return (exStyle & WS_EX_TOPMOST) == WS_EX_TOPMOST;
   }
 
-  /// Gets the handle of the foreground window.
+  /// Gets the handle of the top-level window located at the current mouse position.
+  ///
   /// Only the root window is returned.
+  ///
+  /// Returns 0 if no window is found or if the cursor position cannot be retrieved.
+  int getUnderCursorWindowHandle() {
+    // Allocate memory for the POINT structure to store coordinates
+    final pPoint = calloc<POINT>();
+
+    try {
+      // Get the current cursor position in screen coordinates
+      final result = GetCursorPos(pPoint);
+      if (result == 0) {
+        // Return 0 if failed
+        _log("getUnderCursorWindowHandle");
+        return 0;
+      }
+
+      // Identify the window at the specified point
+      // WindowFromPoint may return a child window (e.g., a button or a text area)
+      final hwndPoint = WindowFromPoint(pPoint.ref);
+
+      if (hwndPoint == 0) return 0;
+
+      return getRootWindowHandle(hwndPoint);
+    } finally {
+      free(pPoint);
+    }
+  }
+
+  /// Gets the handle of the foreground window.
+  ///
+  /// Only the root window is returned.
+  ///
   /// Returns 0 if no window is active.
   int getForegroundWindowHandle() {
     final hwnd = GetForegroundWindow();
     if (hwnd == 0) return 0;
 
+    return getRootWindowHandle(hwnd);
+  }
+
+  /// Gets the root window handle of a window.
+  ///
+  /// Returns the root window handle of the window handle passed in.
+  int getRootWindowHandle(int hwnd) {
     var candidate = hwnd;
 
     final root = GetAncestor(candidate, GA_ROOT);

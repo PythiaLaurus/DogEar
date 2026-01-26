@@ -29,7 +29,7 @@ class TopmostOverlayOrchestrator extends _$TopmostOverlayOrchestrator {
   /// Adds or removes the foreground window from the list of tracked windows.
   /// If the window is already tracked, it will be removed.
   void autoAddRemoveForegroundWindow() {
-    final result = nativeWindowBridge.toggleForegroundWindowTopmost();
+    final result = nativeWindowBridge.toggleUnderCursorWindowTopmost();
     if (!result.isSuccess) return;
 
     if (result.shouldTopmost) {
