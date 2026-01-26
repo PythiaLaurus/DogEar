@@ -8,7 +8,7 @@ param (
     [string]$ReleaseNoteFileName
 )
 
-$TemplatePath = Join-Path $PSScriptRoot "Release.template.md"
+$TemplatePath = Join-Path $PSScriptRoot "Release-Note-Template.md"
 $ChangelogPath = Join-Path $PSScriptRoot "Changelog.md"
 $OutputPath = Join-Path $DistDir $ReleaseNoteFileName
 
