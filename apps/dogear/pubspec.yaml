@@ -44,8 +44,6 @@ dependencies:
       path: packages/tray_manager
   window_manager: ^0.5.1
   shared_preferences: ^2.5.4
-  path_provider: ^2.1.5
-  file_picker: ^10.3.8
   path: ^1.9.1
   freezed_annotation: ^3.1.0
   hotkey_manager: ^0.2.3
@@ -53,6 +51,8 @@ dependencies:
   win32: ^5.15.0
   ffi: ^2.1.5
   json_annotation: ^4.9.0
+  launch_at_startup: ^0.5.1
+  package_info_plus: ^9.0.0
 
 dev_dependencies:
   flutter_test:
