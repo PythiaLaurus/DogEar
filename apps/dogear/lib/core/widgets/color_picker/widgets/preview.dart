@@ -242,6 +242,7 @@ class ColorSwatchCircle extends StatelessWidget {
             ],
           ),
       child: ClipOval(
+        clipBehavior: Clip.antiAliasWithSaveLayer,
         child: Stack(
           fit: StackFit.expand,
           children: [

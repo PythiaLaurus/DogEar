@@ -50,6 +50,11 @@ class AlphaSlider extends StatelessWidget {
     return ColorPropertySlider(
       propertyType: ColorPropertyType.alpha,
       value: hsvColor.alpha,
+      backgroundPainter: const CheckerBoardPainter(
+        cellSize: 3,
+        darkColor: Color(0xFFCCCCCC),
+        lightColor: Color(0xFFFFFFFF),
+      ),
       trackPainter: AlphaTrackPainter(
         baseColor: hsvColor.withAlpha(1).toColor(),
       ),
@@ -63,6 +68,7 @@ class AlphaSlider extends StatelessWidget {
 class ColorPropertySlider extends StatelessWidget {
   final ColorPropertyType propertyType;
   final double value;
+  final CustomPainter? backgroundPainter;
   final CustomPainter trackPainter;
   final Color thumbColor;
   final double thumbSize;
@@ -72,6 +78,7 @@ class ColorPropertySlider extends StatelessWidget {
     super.key,
     required this.propertyType,
     required this.value,
+    this.backgroundPainter,
     required this.trackPainter,
     required this.thumbColor,
     required this.thumbSize,
@@ -125,9 +132,11 @@ class ColorPropertySlider extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(5),
+        clipBehavior: Clip.antiAliasWithSaveLayer,
         child: CustomPaint(
           size: const Size(double.infinity, 10),
-          painter: trackPainter,
+          painter: backgroundPainter,
+          foregroundPainter: trackPainter,
         ),
       ),
     );

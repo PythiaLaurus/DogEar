@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'checker_boder_painter.dart';
-
 /// Draw the hue slider track.
 class HueTrackPainter extends CustomPainter {
   /// The distance (in pixels) from the left and right edges where the color remains constant.
@@ -56,26 +54,12 @@ class HueTrackPainter extends CustomPainter {
 /// Draw the alpha slider track.
 class AlphaTrackPainter extends CustomPainter {
   final Color baseColor;
-  final double trackPadding;
 
-  const AlphaTrackPainter({required this.baseColor, this.trackPadding = 0.0});
+  const AlphaTrackPainter({required this.baseColor});
 
   @override
   void paint(Canvas canvas, Size size) {
     final Rect rect = Offset.zero & size;
-
-    // Draw the checkerboard background.
-    CheckerBoardPainter(
-      cellSize: 3,
-      darkColor: Color(0xFFCCCCCC),
-      lightColor: Color(0xFFFFFFFF),
-    ).paint(canvas, Size(size.width - 1, size.height - 1));
-
-    // Calculate relative position
-    // Avoid crossing exceeds
-    final double safePadding = trackPadding.clamp(0.0, size.width / 2);
-    final double startT = size.width > 0 ? safePadding / size.width : 0.0;
-    final double endT = 1.0 - startT;
 
     // 2 real colors
     final Color transparentColor = baseColor.withValues(alpha: 0.0);
@@ -83,14 +67,12 @@ class AlphaTrackPainter extends CustomPainter {
 
     // Draw gradient (transparent -> solid)
     final Gradient gradient = LinearGradient(
-      colors: [transparentColor, transparentColor, solidColor, solidColor],
-      stops: [0.0, startT, endT, 1.0],
+      colors: [transparentColor, solidColor],
     );
     canvas.drawRect(rect, Paint()..shader = gradient.createShader(rect));
   }
 
   @override
   bool shouldRepaint(AlphaTrackPainter oldDelegate) =>
-      oldDelegate.baseColor != baseColor ||
-      oldDelegate.trackPadding != trackPadding;
+      oldDelegate.baseColor != baseColor;
 }

@@ -6,7 +6,7 @@ class CheckerBoardPainter extends CustomPainter {
   final Color darkColor;
   final Color lightColor;
 
-  CheckerBoardPainter({
+  const CheckerBoardPainter({
     this.cellSize = 8.0,
     this.darkColor = const Color(0xFFE0E0E0),
     this.lightColor = const Color(0xFFFFFFFF),
