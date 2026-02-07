@@ -227,7 +227,7 @@ class _UserPreferencesBodyState extends ConsumerState<UserPreferencesBody> {
                 onChanged: (hotkey) {
                   userPrefsCtrl.updateShortcut(hotkey);
                 },
-              ),
+              ).mouseRegion(cursor: SystemMouseCursors.click),
             );
           },
           SettingsItemType.dogEarColor: (item) {
@@ -241,7 +241,7 @@ class _UserPreferencesBodyState extends ConsumerState<UserPreferencesBody> {
                   color: Color(userPrefs.dogEarColorARGB),
                   radius: 20,
                 ),
-              ),
+              ).mouseRegion(cursor: SystemMouseCursors.click),
             );
           },
           SettingsItemType.themeMode: (item) {
