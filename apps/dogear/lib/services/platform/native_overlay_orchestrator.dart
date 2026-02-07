@@ -89,7 +89,7 @@ class NativeOverlayOrchestrator {
     );
     if (overlayHwnd == 0) return null;
 
-    // Set the window's opacity to 255 (100% not transparent) but ignoring the color parameter.
+    // Set the window's opacity to [_brushAlpha] but ignoring the color parameter.
     nativeWindowBridge.setLayeredWindowAttributes(
       overlayHwnd,
       0,
