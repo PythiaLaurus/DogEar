@@ -33,7 +33,7 @@ class UserPreferences extends _$UserPreferences {
     return prefs;
   }
 
-  /// Shortcut
+  /// Updates shortcut.
   void updateShortcut(HotKey? hotkey) {
     final prevPrefs = state.value;
 
@@ -63,7 +63,7 @@ class UserPreferences extends _$UserPreferences {
     appHotKeys.register(newHotkeyBinding);
   }
 
-  /// Dog Ear Color
+  /// Updates dog ear color.
   void updateDogEarColor(int newColorARGB) {
     final prevPrefs = state.value;
 
@@ -79,7 +79,9 @@ class UserPreferences extends _$UserPreferences {
     orchestrator.updateOverlayColor(Color(newColorARGB));
   }
 
-  /// Reapply dog ear color
+  /// Reapplies dog ear color.
+  ///
+  /// Used after color picking dialog is closed without confirmation.
   void reapplyDogEarColor() {
     final prevPrefs = state.value;
 
@@ -88,7 +90,7 @@ class UserPreferences extends _$UserPreferences {
     _applyDogEarColor(prevPrefs.dogEarColorARGB);
   }
 
-  /// Close to tray
+  /// Closes to tray.
   void updateCloseToTray(bool value) {
     final prevPrefs = state.value;
 
@@ -104,7 +106,7 @@ class UserPreferences extends _$UserPreferences {
   // Will be auto applied by [NormalAppBar]
   // void _applyCloseToTray(bool value) {}
 
-  /// Show tray icon
+  /// Shows tray icon.
   void updateShowTrayIcon(bool value) {
     final prevPrefs = state.value;
 
@@ -119,20 +121,20 @@ class UserPreferences extends _$UserPreferences {
     newValue ? appTray.showTray() : appTray.hideTray();
   }
 
-  /// Reset All User Preferences
+  /// Resets All User Preferences.
   void resetUserPrefs() {
     final initPrefs = UserPreferencesState.initialize();
     _saveUserPrefs(initPrefs);
     _applyAll(initPrefs);
   }
 
-  /// Save All User Preferences
+  /// Saves All User Preferences.
   void _saveUserPrefs(UserPreferencesState newPrefs) {
     state = AsyncValue.data(newPrefs);
     appStorage.setJson(_kStorage, newPrefs.toJson());
   }
 
-  /// Apply All User Preferences
+  /// Applies All User Preferences.
   Future<void> _applyAll(UserPreferencesState prefs) async {
     _applyShortcut(prefs.shortcut);
     _applyDogEarColor(prefs.dogEarColorARGB);
@@ -142,7 +144,7 @@ class UserPreferences extends _$UserPreferences {
     _applyShowTrayIcon(prefs.showTrayIcon);
   }
 
-  // Check if tray is Initialized and initialize it if not
+  // Checks if tray is Initialized and initialize it if not.
   Future<void> _initTray() async {
     if (!appTray.isInitialized) {
       await appTray.initSystemTray();
