@@ -13,6 +13,9 @@ class AppTray {
 
   bool get isInitialized => trayManager.hasListeners;
 
+  /// Initializes system tray with icon, tooltip and context menu.
+  ///
+  /// Will create a system tray.
   Future<void> initSystemTray() async {
     // Set the system tray icon
     await trayManager.setIcon(iconPath);
@@ -40,6 +43,10 @@ class AppTray {
 
   void showTray() async {
     await trayManager.setIcon(iconPath);
+  }
+
+  void setCloseToTray(bool value) {
+    TrayConfig.closeToTray = value;
   }
 }
 

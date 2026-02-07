@@ -12,6 +12,7 @@ abstract class UserPreferencesState with _$UserPreferencesState {
     @Default(0xFF8F4C33) int dogEarColorARGB,
     @Default(true) bool closeToTray,
     @Default(true) bool showTrayIcon,
+    @Default(false) bool autostart,
   }) = _UserPreferencesState;
 
   factory UserPreferencesState.initialize() => UserPreferencesState(

@@ -41,6 +41,11 @@ class _UserPreferencesBodyState extends ConsumerState<UserPreferencesBody> {
           function: "Dog Ear Color",
           description: "Color of the overlay indicator",
         ),
+        SettingsItem(
+          type: SettingsItemType.themeMode,
+          function: "App Theme",
+          description: "",
+        ),
       ],
     ),
     SettingsCategory(
@@ -58,9 +63,9 @@ class _UserPreferencesBodyState extends ConsumerState<UserPreferencesBody> {
           description: "Show icon in system tray area",
         ),
         SettingsItem(
-          type: SettingsItemType.themeMode,
-          function: "App Theme",
-          description: "",
+          type: SettingsItemType.autostart,
+          function: "Autostart",
+          description: "Start Dog Ear automatically on system boot",
         ),
         SettingsItem(
           type: SettingsItemType.resetUserPrefs,
@@ -239,36 +244,6 @@ class _UserPreferencesBodyState extends ConsumerState<UserPreferencesBody> {
               ),
             );
           },
-          SettingsItemType.closeToTray: (item) {
-            return SwitchListTile(
-              title: Text(item.function, style: appTextStyles.bodyLarge),
-              subtitle: Text(item.description, style: appTextStyles.body),
-              value: userPrefs.closeToTray,
-              onChanged: (value) {
-                userPrefsCtrl.updateCloseToTray(value);
-              },
-              overlayColor: WidgetStatePropertyAll(Colors.transparent),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.vertical(top: Radius.circular(8)),
-              ),
-              trackOutlineColor: WidgetStatePropertyAll(Colors.transparent),
-            );
-          },
-          SettingsItemType.showTrayIcon: (item) {
-            return SwitchListTile(
-              title: Text(item.function, style: appTextStyles.bodyLarge),
-              subtitle: Text(item.description, style: appTextStyles.body),
-              value: userPrefs.showTrayIcon,
-              onChanged: (value) {
-                userPrefsCtrl.updateShowTrayIcon(value);
-              },
-              overlayColor: WidgetStatePropertyAll(Colors.transparent),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.vertical(bottom: Radius.circular(8)),
-              ),
-              trackOutlineColor: WidgetStatePropertyAll(Colors.transparent),
-            );
-          },
           SettingsItemType.themeMode: (item) {
             return Column(
               children: [
@@ -278,6 +253,33 @@ class _UserPreferencesBodyState extends ConsumerState<UserPreferencesBody> {
                   trailing: ThemeModelSelector(),
                 ),
               ],
+            );
+          },
+          SettingsItemType.closeToTray: (item) {
+            return _buildSwitchListTile(
+              item: item,
+              value: userPrefs.closeToTray,
+              onChanged: (value) {
+                userPrefsCtrl.updateCloseToTray(value);
+              },
+            );
+          },
+          SettingsItemType.showTrayIcon: (item) {
+            return _buildSwitchListTile(
+              item: item,
+              value: userPrefs.showTrayIcon,
+              onChanged: (value) {
+                userPrefsCtrl.updateShowTrayIcon(value);
+              },
+            );
+          },
+          SettingsItemType.autostart: (item) {
+            return _buildSwitchListTile(
+              item: item,
+              value: userPrefs.autostart,
+              onChanged: (value) {
+                userPrefsCtrl.updateAutostart(value);
+              },
             );
           },
           SettingsItemType.resetUserPrefs: (item) {
@@ -334,6 +336,26 @@ class _UserPreferencesBodyState extends ConsumerState<UserPreferencesBody> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildSwitchListTile({
+    required SettingsItem item,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    final appTextStyles = ref.watch(appTextStylesProvider);
+
+    return SwitchListTile(
+      title: Text(item.function, style: appTextStyles.bodyLarge),
+      subtitle: Text(item.description, style: appTextStyles.body),
+      value: value,
+      onChanged: onChanged,
+      overlayColor: WidgetStatePropertyAll(Colors.transparent),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(8)),
+      ),
+      trackOutlineColor: WidgetStatePropertyAll(Colors.transparent),
     );
   }
 }

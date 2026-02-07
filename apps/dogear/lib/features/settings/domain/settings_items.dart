@@ -3,9 +3,10 @@ import 'package:flutter/material.dart';
 enum SettingsItemType {
   shortcut,
   dogEarColor,
+  themeMode,
   closeToTray,
   showTrayIcon,
-  themeMode,
+  autostart,
   resetUserPrefs,
 }
 

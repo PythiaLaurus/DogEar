@@ -10,6 +10,7 @@ import 'package:flutter_single_instance/flutter_single_instance.dart';
 
 import 'routes/app_routes.dart';
 import 'core/theme/theme.dart';
+import 'services/platform/autostart.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,6 +30,8 @@ void main() async {
     windowManager.show();
     windowManager.focus();
   };
+
+  appAutostart.initAutostart();
 
   await windowManager.ensureInitialized();
   WindowOptions windowOptions = const WindowOptions(

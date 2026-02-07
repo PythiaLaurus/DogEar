@@ -5,6 +5,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../core/hotkeys/hotkeys.dart';
 import '../../../core/storage/storage.dart';
+import '../../../services/platform/autostart.dart';
 import '../../../services/platform/tray.dart';
 import '../../topmost_overlay_orchestration/application/topmost_overlay_orchestrator.dart';
 import '../domain/user_preferences_state.dart';
@@ -90,7 +91,8 @@ class UserPreferences extends _$UserPreferences {
     _applyDogEarColor(prevPrefs.dogEarColorARGB);
   }
 
-  /// Closes to tray.
+  /// Updates should app be closed to tray when clicking
+  /// on the close button on app bar.
   void updateCloseToTray(bool value) {
     final prevPrefs = state.value;
 
@@ -98,13 +100,12 @@ class UserPreferences extends _$UserPreferences {
     if (prevPrefs.closeToTray == value) return;
 
     _saveUserPrefs(prevPrefs.copyWith(closeToTray: value));
-
-    // Will be auto applied by [NormalAppBar]
-    // _applyCloseToTray(value);
+    _applyCloseToTray(value);
   }
 
-  // Will be auto applied by [NormalAppBar]
-  // void _applyCloseToTray(bool value) {}
+  void _applyCloseToTray(bool newValue) {
+    appTray.setCloseToTray(newValue);
+  }
 
   /// Shows tray icon.
   void updateShowTrayIcon(bool value) {
@@ -119,6 +120,23 @@ class UserPreferences extends _$UserPreferences {
 
   void _applyShowTrayIcon(bool newValue) {
     newValue ? appTray.showTray() : appTray.hideTray();
+  }
+
+  /// Updates if app should autostart on system boot.
+  ///
+  /// Will be auto applied by [AppAutostart].
+  void updateAutostart(bool value) {
+    final prevPrefs = state.value;
+
+    if (prevPrefs == null) return;
+    if (prevPrefs.autostart == value) return;
+
+    _saveUserPrefs(prevPrefs.copyWith(autostart: value));
+    _applyAutostart(value);
+  }
+
+  void _applyAutostart(bool newValue) {
+    appAutostart.setAutostart(newValue);
   }
 
   /// Resets All User Preferences.
@@ -138,9 +156,10 @@ class UserPreferences extends _$UserPreferences {
   Future<void> _applyAll(UserPreferencesState prefs) async {
     _applyShortcut(prefs.shortcut);
     _applyDogEarColor(prefs.dogEarColorARGB);
-    // _applyCloseToTray(prefs.closeToTray);
+    _applyAutostart(prefs.autostart);
 
     await _initTray();
+    _applyCloseToTray(prefs.closeToTray);
     _applyShowTrayIcon(prefs.showTrayIcon);
   }
 
