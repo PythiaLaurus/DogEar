@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'theme.dart';
+import '../app_colors/app_colors.dart';
 
 extension TextStyleExtension on TextStyle {
   TextStyle bold() => copyWith(fontWeight: FontWeight.bold);
