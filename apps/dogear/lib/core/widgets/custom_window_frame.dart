@@ -29,7 +29,7 @@ class WindowRoundedCorners extends ConsumerWidget {
         resizeEdgeSize: isDocked ? 8 : 14,
         resizeEdgeMargin: isDocked ? EdgeInsets.zero : const EdgeInsets.all(4),
         child: Container(
-          clipBehavior: Clip.antiAlias,
+          clipBehavior: Clip.antiAliasWithSaveLayer,
           margin: isMaxOrDocked ? null : const EdgeInsets.all(10),
           decoration: BoxDecoration(
             borderRadius: isMaxOrDocked
