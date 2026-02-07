@@ -34,8 +34,9 @@ class NativeOverlayOrchestrator {
   final Map<int, int> _overlayToTarget = {};
   bool _isClassRegistered = false;
   int _hookHandle = 0;
-  int _brushHandle = 0;
   NativeCallable<WinEventProc>? _hookCallback;
+  int _brushHandle = 0;
+  int _brushAlpha = 255;
 
   /// This will be called after a target window is destroyed (closed).
   ///
@@ -88,12 +89,11 @@ class NativeOverlayOrchestrator {
     );
     if (overlayHwnd == 0) return null;
 
-    // Set the window's opacity to 255 (100% not transparent) but ignoring the
-    // color parameter.
+    // Set the window's opacity to 255 (100% not transparent) but ignoring the color parameter.
     nativeWindowBridge.setLayeredWindowAttributes(
       overlayHwnd,
       0,
-      255,
+      _brushAlpha,
       LWA_ALPHA,
     );
 
@@ -173,6 +173,8 @@ class NativeOverlayOrchestrator {
     final r = (color.r * 255).toInt();
     final g = (color.g * 255).toInt();
     final b = (color.b * 255).toInt();
+    final a = (color.a * 255).toInt();
+
     // Windows uses BGR format
     final colorRef = r | (g << 8) | (b << 16);
 
@@ -184,6 +186,12 @@ class NativeOverlayOrchestrator {
       final hwnd = _targetToOverlay.values.first;
       // GCLP_HBRBACKGROUND is -10
       nativeWindowBridge.setClassLongPtr(hwnd, GCLP_HBRBACKGROUND, newBrush);
+
+      if (_brushAlpha != a) {
+        for (final h in _targetToOverlay.values) {
+          nativeWindowBridge.setLayeredWindowAttributes(h, 0, a, LWA_ALPHA);
+        }
+      }
 
       // Force redraw
       for (final h in _targetToOverlay.values) {
@@ -197,6 +205,7 @@ class NativeOverlayOrchestrator {
     }
 
     _brushHandle = newBrush;
+    _brushAlpha = a;
   }
 
   /// Register Window Class.
