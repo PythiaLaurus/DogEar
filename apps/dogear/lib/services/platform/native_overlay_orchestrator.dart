@@ -125,6 +125,7 @@ class NativeOverlayOrchestrator {
     // This makes windows automatically manages the lifetime of the overlay.
     nativeWindowBridge.setWindowOwner(overlayHwnd, targetHwnd);
 
+    // Bring target to foreground
     nativeWindowBridge.setForegroundWindow(targetHwnd);
 
     return overlayHwnd;
