@@ -7,7 +7,7 @@ import 'package:ffi/ffi.dart';
 import 'package:flutter/material.dart' show debugPrint;
 import 'package:win32/win32.dart';
 
-import 'win32_ext.dart';
+import 'win32_extension.dart';
 
 class NativeWindowBridge {
   NativeWindowBridge._();

@@ -6,7 +6,7 @@ import 'package:ffi/ffi.dart';
 import 'package:win32/win32.dart';
 
 import 'native_window_bridge.dart';
-import 'win32_ext.dart';
+import 'win32_extension.dart';
 
 class NativeOverlayOrchestrator {
   NativeOverlayOrchestrator._();
