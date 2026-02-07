@@ -13,10 +13,11 @@ class NativeWindowBridge {
   NativeWindowBridge._();
   static final instance = NativeWindowBridge._();
 
-  /// [DestroyWindow].<br>
+  /// [DestroyWindow].
+  ///
   /// Destroys the specified window and releases its resources.
   ///
-  /// [hwnd] A handle to the window to be destroyed.<br>
+  /// [hwnd] A handle to the window to be destroyed.
   ///
   /// Returns true if the function succeeds; false if it fails.
   /// Note: A window cannot be destroyed if it was created by another thread.
@@ -26,7 +27,21 @@ class NativeWindowBridge {
     return result != 0;
   }
 
-  /// [ShowWindow].<br>
+  /// [SetForegroundWindow].
+  ///
+  /// Brings the specified window into the foreground and activates the window.
+  ///
+  /// [hwnd] A handle to the window.
+  ///
+  /// Returns true if the window was successfully brought to the foreground.
+  bool setForegroundWindow(int hwnd) {
+    final result = SetForegroundWindow(hwnd);
+    _log("setForegroundWindow");
+    return result != 0;
+  }
+
+  /// [ShowWindow].
+  ///
   /// Sets the specified window's show state.
   ///
   /// [hwnd] A handle to the window.<br>
@@ -39,7 +54,8 @@ class NativeWindowBridge {
     return ShowWindow(hwnd, nCmdShow);
   }
 
-  /// [UpdateWindow].<br>
+  /// [UpdateWindow].
+  ///
   /// Updates the client area of the specified window by sending a WM_PAINT message
   /// directly to the window procedure if the update region is not empty.
   ///
@@ -52,7 +68,8 @@ class NativeWindowBridge {
     return result != 0;
   }
 
-  /// [IsWindowVisible].<br>
+  /// [IsWindowVisible].
+  ///
   /// Determines the visibility state of the specified window.
   ///
   /// [hwnd] A handle to the window to be tested.
@@ -318,7 +335,8 @@ class NativeWindowBridge {
     }
   }
 
-  /// [SetWindowPos].<br>
+  /// [SetWindowPos]
+  ///
   /// Changes the size, position, and Z-order of a child, pop-up, or top-level window.
   ///
   /// [hwnd] A handle to the window.<br>
@@ -363,7 +381,8 @@ class NativeWindowBridge {
     }
   }
 
-  /// [SetWindowRgn].<br>
+  /// [SetWindowRgn].
+  ///
   /// Sets the window region of a window.
   /// The window region determines the area where the system permits drawing.
   ///
@@ -392,7 +411,8 @@ class NativeWindowBridge {
     return true;
   }
 
-  /// [InvalidateRect].<br>
+  /// [InvalidateRect].
+  ///
   /// Adds a rectangle to the specified window's update region.
   /// This tells Windows that the area needs to be repainted.
   ///
@@ -411,7 +431,8 @@ class NativeWindowBridge {
     return result != 0;
   }
 
-  /// [SetClassLongPtr].<br>
+  /// [SetClassLongPtr].
+  ///
   /// Replaces the specified value at the specified offset in the extra class memory
   /// or the WNDCLASSEX structure for the class to which the window belongs.
   ///
@@ -433,7 +454,8 @@ class NativeWindowBridge {
     SetWindowLongPtr(childHwnd, GWLP_HWNDPARENT, ownerHwnd);
   }
 
-  /// [SetLayeredWindowAttributes].<br>
+  /// [SetLayeredWindowAttributes].
+  ///
   /// Sets the opacity and transparency color key of a layered window.
   ///
   /// [hwnd] is the handle to the layered window.<br>
@@ -455,7 +477,8 @@ class NativeWindowBridge {
     return result != 0;
   }
 
-  /// [CreateWindowEx].<br>
+  /// [CreateWindowEx].
+  ///
   /// Creates an overlapped, pop-up, or child window with an extended window style.
   ///
   /// [dwExStyle] specifies the extended window style (e.g., WS_EX_LAYERED).<br>
@@ -526,7 +549,8 @@ class NativeWindowBridge {
     }
   }
 
-  /// [SetWinEventHook].<br>
+  /// [SetWinEventHook].
+  ///
   /// Sets an event hook function for a range of events.
   ///
   /// [eventMin] specifies the event constant for the lowest event value in the range.<br>
@@ -588,7 +612,8 @@ class NativeWindowBridge {
     }
   }
 
-  /// [UnregisterClass].<br>
+  /// [UnregisterClass].
+  ///
   /// Unregisters a window class created by the [registerClass] function.
   ///
   /// [lpClassName] is the name of the window class to be unregistered.<br>
@@ -605,7 +630,8 @@ class NativeWindowBridge {
     }
   }
 
-  /// [GetClassName].<br>
+  /// [GetClassName].
+  ///
   /// Retrieves the window class name of the specified window.
   ///
   /// [hwnd] is the handle to the window whose class name is to be retrieved.
