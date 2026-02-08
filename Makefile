@@ -31,12 +31,17 @@ RELEASE_TITLE = "DogEar $(APP_VER)"
 NOTES_FILE = $(DIST_DIR)/$(RELEASE_NOTE_BASE_FILENAME).md
 EXE_FILE = $(DIST_DIR)/$(SETUP_OUT_BASE_FILENAME).exe
 
-build-flutter:
+# Core Tasks. Execute these tasks in order: build -> package -> publish
+# Cleans, Builds the Flutter app and copies the runtime DLLs.
+build:
+	@echo "Cleaning Previous Flutter Build..."
+	$(MAKE) clean
 	@echo "Starting Flutter Build..."
 	cd $(APP_DIR) && flutter build windows
 	$(MAKE) copy-runtime
 	@echo "Flutter Build Complete!"
 
+# Packages the app and generates release note.
 package:
 	@echo "Packaging $(SETUP_OUT_BASE_FILENAME).exe"
 	ISCC /DMyAppVersion="$(APP_VER)" \
@@ -45,16 +50,28 @@ package:
 		$(PACKAGE_SCRIPT)
 	$(MAKE) gen-release-note
 
+# Publishes the release to GitHub.
 publish:
 	@echo "Publishing to GitHub Release..."
 	gh release create $(TAG_NAME) "$(EXE_FILE)" \
 		--title $(RELEASE_TITLE) \
 		--notes-file "$(NOTES_FILE)"
 
+# Tools
+# Updates icons
 update-icons:
 	@echo "Updating Icons..."
 	powershell -ExecutionPolicy Bypass -File $(UPDATE_ICONS_SCRIPT)
 
+# Prints the current version.
+echo-version:
+	@echo "$(APP_VER)"
+
+# Cleans the Flutter app.
+clean:
+	cd $(APP_DIR) && flutter clean
+
+# Tools that run automatically in the Core Tasks.
 # This will run automatically in [package].
 gen-release-note:
 	@echo "Generating Release Note..."
@@ -64,14 +81,8 @@ gen-release-note:
 		-FileName "$(SETUP_OUT_BASE_FILENAME).exe" \
 		-ReleaseNoteFilename "$(RELEASE_NOTE_BASE_FILENAME).md"
 
-# This will run automatically in [build-flutter].
+# This will run automatically in [build].
 copy-runtime:
 	@echo "Injecting MSVC Runtimes into Release folder..."
 	powershell -ExecutionPolicy Bypass -File $(COPY_RUNTIME_DLLs_SCRIPT) \
 		-BuildDir $(FLUTTER_BUILD_DIR)
-
-echo-version:
-	@echo "$(APP_VER)"
-
-clean:
-	cd $(APP_DIR) && flutter clean

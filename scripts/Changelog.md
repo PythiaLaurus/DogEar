@@ -1,6 +1,17 @@
 ### 🚀 What's New
 
-- **Targeting Logic**: Refined window selection. The "Always on Top" toggle now targets the **window directly under your mouse cursor** instead of just the foreground window, allowing for faster and more intuitive pinning.
+- **Startup Launch**: Added support for launching the application on system startup. This option is **disabled by default**, giving users full control over whether the app runs automatically after boot.
 
-### 🛠️ Improvements
-- **Elevated Execution**: The application now defaults to **Administrator privileges**. This ensures seamless "Always on Top" functionality for all windows, including those running as Administrator (e.g., Task Manager, Command Prompt, or installers), without requiring manual "Run as Administrator" each time.
+### ✨ Enhancements
+
+- **Cursor Feedback**: The mouse cursor now changes to a **clickable indicator** when hovering over interactive areas of the interface, making available actions clearer and improving overall usability.
+
+### 🐞 Bug Fixes
+
+- **UI Rendering**: Fixed rendering issues with the **color preview circle**, **alpha slider**, and **window corner anti-aliasing**, ensuring smoother visuals and more accurate color representation.
+- **Topmost Reliability**: Resolved an issue where setting or clearing "Always on Top" could fail when the target window was **not in an active state**.
+- **Focus Restoration**: After removing "Always on Top" from a window, the application now brings the **current foreground window back to the front**, reducing visual disruption and improving user experience.
+
+### 🧹 Maintenance
+
+- **Dependency Cleanup**: Removed unused dependencies to reduce binary size and simplify maintenance.
