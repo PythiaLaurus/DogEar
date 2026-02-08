@@ -26,9 +26,9 @@ class TopmostOverlayOrchestrator extends _$TopmostOverlayOrchestrator {
     return TopmostOverlayOrchestratorState();
   }
 
-  /// Adds or removes the foreground window from the list of tracked windows.
-  /// If the window is already tracked, it will be removed.
   void autoAddRemoveForegroundWindow() {
+    final curForeWindowHwnd = nativeWindowBridge.getForegroundWindowHandle();
+
     final result = nativeWindowBridge.toggleUnderCursorWindowTopmost();
     if (!result.isSuccess) return;
 
@@ -49,6 +49,10 @@ class TopmostOverlayOrchestrator extends _$TopmostOverlayOrchestrator {
     } else {
       nativeOverlayOrchestrator.removeTarget(result.hwnd);
       _removefromState(result.hwnd);
+
+      if (curForeWindowHwnd != 0) {
+        nativeWindowBridge.setForegroundWindow(curForeWindowHwnd);
+      }
     }
   }
 

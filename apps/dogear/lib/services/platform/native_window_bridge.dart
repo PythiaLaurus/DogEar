@@ -161,11 +161,15 @@ class NativeWindowBridge {
   }
 
   /// Sets or cancel the topmost state of a window.
+  ///
   /// Returns true if the window was successfully set or canceled as topmost.
+  ///
+  /// Note: To ensure system's response, this will bring the window to foreground whether or not set to topmost.
   bool setTopmost(int hwnd, [bool topmost = true]) {
     final insertAfter = topmost ? HWND_TOPMOST : HWND_NOTOPMOST;
     final flags = SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE;
 
+    setForegroundWindow(hwnd);
     final result = SetWindowPos(hwnd, insertAfter, 0, 0, 0, 0, flags);
 
     if (result == 0) {
