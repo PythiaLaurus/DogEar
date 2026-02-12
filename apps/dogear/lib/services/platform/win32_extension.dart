@@ -1,17 +1,15 @@
-// ignore_for_file: constant_identifier_names, non_constant_identifier_names
+// ignore_for_file: constant_identifier_names, non_constant_identifier_names, camel_case_types
 
-// Functions, types and constants that are not part of the implemented
-// Dart Win32 API.
+// Functions, types and constants that are not part of the implemented Dart Win32 API.
 
 import 'dart:ffi';
-
 import 'package:win32/win32.dart';
 
 // Win32 API DLL
 final _user32 = DynamicLibrary.open('user32.dll');
 final _gdi32 = DynamicLibrary.open('gdi32.dll');
 
-// Callback types
+/// Callback types.
 typedef WinEventProc =
     Void Function(
       IntPtr hWinEventHook,
@@ -22,6 +20,12 @@ typedef WinEventProc =
       Int32 dwEventThread,
       Int32 dwmsEventTime,
     );
+
+/// TOKEN_ELEVATION.
+final class TOKEN_ELEVATION extends Struct {
+  @Uint32()
+  external int TokenIsElevated;
+}
 
 /// The event ID for location change.
 const int EVENT_OBJECT_LOCATIONCHANGE = 0x800B;

@@ -1,17 +1,10 @@
 ### 🚀 What's New
 
-- **Startup Launch**: Added support for launching the application on system startup. This option is **disabled by default**, giving users full control over whether the app runs automatically after boot.
-
-### ✨ Enhancements
-
-- **Cursor Feedback**: The mouse cursor now changes to a **clickable indicator** when hovering over interactive areas of the interface, making available actions clearer and improving overall usability.
-
-### 🐞 Bug Fixes
-
-- **UI Rendering**: Fixed rendering issues with the **color preview circle**, **alpha slider**, and **window corner anti-aliasing**, ensuring smoother visuals and more accurate color representation.
-- **Topmost Reliability**: Resolved an issue where setting or clearing "Always on Top" could fail when the target window was **not in an active state**.
-- **Focus Restoration**: After removing "Always on Top" from a window, the application now brings the **current foreground window back to the front**, reducing visual disruption and improving user experience.
+- **Improved Startup with Administrator Privileges**: Fixed an issue where the application could not launch on system startup if it was configured to require **administrator privileges**.
+  - Root cause: Applications that require elevation cannot be reliably auto-started via standard **registry-based startup entries**.
+  - Solution: The app now registers a **Windows Scheduled Task** that triggers on user logon and launches the application with elevated privileges.
+  - Requirement: To enable startup at login, the application itself must now be launched **as Administrator** so it can create the scheduled task.
 
 ### 🧹 Maintenance
 
-- **Dependency Cleanup**: Removed unused dependencies to reduce binary size and simplify maintenance.
+- **Dependency Cleanup**: Removed unused dependencies to reduce binary size and streamline maintenance.
