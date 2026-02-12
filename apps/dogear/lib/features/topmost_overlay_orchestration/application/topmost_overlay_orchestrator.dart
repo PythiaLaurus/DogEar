@@ -4,6 +4,7 @@ import 'package:dogear/services/services.dart';
 import 'package:path/path.dart' as p;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../services/platform/native_privilege_manager.dart';
 import '../domain/topmost_overlay_orchestrator_state.dart';
 
 part 'topmost_overlay_orchestrator.g.dart';
@@ -30,7 +31,10 @@ class TopmostOverlayOrchestrator extends _$TopmostOverlayOrchestrator {
     final curForeWindowHwnd = nativeWindowBridge.getForegroundWindowHandle();
 
     final result = nativeWindowBridge.toggleUnderCursorWindowTopmost();
-    if (!result.isSuccess) return;
+    if (!result.isSuccess) {
+      nativePrivilegeManager.requestAdminPrivileges();
+      return;
+    }
 
     if (result.shouldTopmost) {
       final overlayHwnd = nativeOverlayOrchestrator.addTarget(result.hwnd);
