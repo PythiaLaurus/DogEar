@@ -12,7 +12,7 @@ import 'routes/app_routes.dart';
 import 'core/theme/theme.dart';
 import 'services/platform/autostart.dart';
 
-void main() async {
+void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await appHotKeys.unregisterAll();
@@ -31,6 +31,8 @@ void main() async {
     windowManager.focus();
   };
 
+  bool isSilent = args.contains('--silent');
+
   appAutostart.initAutostart();
 
   await windowManager.ensureInitialized();
@@ -45,8 +47,11 @@ void main() async {
   );
   await windowManager.waitUntilReadyToShow(windowOptions, () async {
     await windowManager.setAsFrameless();
-    await windowManager.show();
-    await windowManager.focus();
+
+    if (!isSilent) {
+      await windowManager.show();
+      await windowManager.focus();
+    }
   });
 }
 
