@@ -10,7 +10,6 @@ import 'package:flutter_single_instance/flutter_single_instance.dart';
 
 import 'routes/app_routes.dart';
 import 'core/theme/theme.dart';
-import 'services/platform/autostart.dart';
 
 void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,9 +30,7 @@ void main(List<String> args) async {
     windowManager.focus();
   };
 
-  bool isSilent = args.contains('--silent');
-
-  appAutostart.initAutostart();
+  bool isSilent = args.contains(AppConfig.argSilent);
 
   await windowManager.ensureInitialized();
   WindowOptions windowOptions = const WindowOptions(
@@ -48,7 +45,9 @@ void main(List<String> args) async {
   await windowManager.waitUntilReadyToShow(windowOptions, () async {
     await windowManager.setAsFrameless();
 
-    if (!isSilent) {
+    if (isSilent) {
+      await windowManager.hide();
+    } else {
       await windowManager.show();
       await windowManager.focus();
     }
