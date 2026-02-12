@@ -28,8 +28,8 @@ class UserPreferences extends _$UserPreferences {
     }
 
     final prefs = UserPreferencesState.initialize();
-    _saveUserPrefs(prefs);
     _applyAll(prefs);
+    _saveUserPrefs(prefs);
 
     return prefs;
   }
@@ -41,8 +41,8 @@ class UserPreferences extends _$UserPreferences {
     if (prevPrefs == null) return;
     if (prevPrefs.shortcut == hotkey) return;
 
-    _saveUserPrefs(prevPrefs.copyWith(shortcut: hotkey));
     _applyShortcut(hotkey);
+    _saveUserPrefs(prevPrefs.copyWith(shortcut: hotkey));
   }
 
   void _applyShortcut(HotKey? newKey) {
@@ -71,8 +71,8 @@ class UserPreferences extends _$UserPreferences {
     if (prevPrefs == null) return;
     if (prevPrefs.dogEarColorARGB == newColorARGB) return;
 
-    _saveUserPrefs(prevPrefs.copyWith(dogEarColorARGB: newColorARGB));
     _applyDogEarColor(newColorARGB);
+    _saveUserPrefs(prevPrefs.copyWith(dogEarColorARGB: newColorARGB));
   }
 
   void _applyDogEarColor(int newColorARGB) {
@@ -99,8 +99,8 @@ class UserPreferences extends _$UserPreferences {
     if (prevPrefs == null) return;
     if (prevPrefs.closeToTray == value) return;
 
-    _saveUserPrefs(prevPrefs.copyWith(closeToTray: value));
     _applyCloseToTray(value);
+    _saveUserPrefs(prevPrefs.copyWith(closeToTray: value));
   }
 
   void _applyCloseToTray(bool newValue) {
@@ -114,8 +114,8 @@ class UserPreferences extends _$UserPreferences {
     if (prevPrefs == null) return;
     if (prevPrefs.showTrayIcon == value) return;
 
-    _saveUserPrefs(prevPrefs.copyWith(showTrayIcon: value));
     _applyShowTrayIcon(value);
+    _saveUserPrefs(prevPrefs.copyWith(showTrayIcon: value));
   }
 
   void _applyShowTrayIcon(bool newValue) {
@@ -131,8 +131,8 @@ class UserPreferences extends _$UserPreferences {
     if (prevPrefs == null) return;
     if (prevPrefs.autostart == value) return;
 
-    _saveUserPrefs(prevPrefs.copyWith(autostart: value));
     _applyAutostart(value);
+    _saveUserPrefs(prevPrefs.copyWith(autostart: value));
   }
 
   void _applyAutostart(bool newValue) {
@@ -142,8 +142,8 @@ class UserPreferences extends _$UserPreferences {
   /// Resets All User Preferences.
   void resetUserPrefs() {
     final initPrefs = UserPreferencesState.initialize();
-    _saveUserPrefs(initPrefs);
     _applyAll(initPrefs);
+    _saveUserPrefs(initPrefs);
   }
 
   /// Saves All User Preferences.
