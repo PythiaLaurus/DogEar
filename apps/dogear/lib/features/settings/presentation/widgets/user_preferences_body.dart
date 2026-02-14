@@ -225,9 +225,7 @@ class _UserPreferencesBodyState extends ConsumerState<UserPreferencesBody> {
               subtitle: Text(item.description, style: appTextStyles.body),
               trailing: ShortcutRecorder(
                 hotkeyDisplayed: userPrefs.shortcut,
-                onChanged: (hotkey) {
-                  userPrefsCtrl.updateShortcut(hotkey);
-                },
+                onChanged: userPrefsCtrl.updateShortcut,
               ).mouseRegion(cursor: SystemMouseCursors.click),
             );
           },
@@ -260,27 +258,21 @@ class _UserPreferencesBodyState extends ConsumerState<UserPreferencesBody> {
             return _buildSwitchListTile(
               item: item,
               value: userPrefs.closeToTray,
-              onChanged: (value) {
-                userPrefsCtrl.updateCloseToTray(value);
-              },
+              onChanged: userPrefsCtrl.updateCloseToTray,
             );
           },
           SettingsItemType.showTrayIcon: (item) {
             return _buildSwitchListTile(
               item: item,
               value: userPrefs.showTrayIcon,
-              onChanged: (value) {
-                userPrefsCtrl.updateShowTrayIcon(value);
-              },
+              onChanged: userPrefsCtrl.updateShowTrayIcon,
             );
           },
           SettingsItemType.autostart: (item) {
             return _buildSwitchListTile(
               item: item,
               value: userPrefs.autostart,
-              onChanged: (value) {
-                userPrefsCtrl.updateAutostart(value);
-              },
+              onChanged: userPrefsCtrl.updateAutostart,
             );
           },
           SettingsItemType.resetUserPrefs: (item) {
