@@ -17,7 +17,7 @@ class UserPreferences extends _$UserPreferences {
   static const String _kStorage = "settings.userPreferences";
 
   @override
-  FutureOr<UserPreferencesState> build() async {
+  Future<UserPreferencesState> build() async {
     final savedPrefsJson = await appStorage.getJson(_kStorage);
 
     if (savedPrefsJson != null) {
