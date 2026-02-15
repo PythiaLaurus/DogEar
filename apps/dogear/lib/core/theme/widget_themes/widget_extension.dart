@@ -4,6 +4,6 @@ extension WidgetExtension on Widget {
   Padding padding({required EdgeInsetsGeometry padding}) =>
       Padding(padding: padding, child: this);
 
-  MouseRegion mouseRegion({MouseCursor cursor = SystemMouseCursors.basic}) =>
+  MouseRegion mouseRegion({MouseCursor cursor = SystemMouseCursors.click}) =>
       MouseRegion(cursor: cursor, child: this);
 }
