@@ -188,26 +188,26 @@ class _UserPreferencesBodyState extends ConsumerState<UserPreferencesBody> {
     final userPrefsCtrl = ref.read(userPreferencesProvider.notifier);
 
     return switch (item) {
-      .shortcut => _buildConsumer(
-        item: item,
+      .shortcut => _buildConsumer<HotKey?>(
+        item: item as SettingsItem<HotKey?>,
         childBuilder: (value) => ListTile(
           title: Text(item.function, style: appTextStyles.bodyLarge),
           subtitle: Text(item.description, style: appTextStyles.body),
           trailing: ShortcutRecorder(
-            hotkeyDisplayed: value as HotKey?,
+            hotkeyDisplayed: value,
             onChanged: userPrefsCtrl.updateShortcut,
           ).mouseRegion(),
         ),
       ),
-      .dogEarColor => _buildConsumer(
-        item: item,
+      .dogEarColor => _buildConsumer<int>(
+        item: item as SettingsItem<int>,
         childBuilder: (value) => ListTile(
           title: Text(item.function, style: appTextStyles.bodyLarge),
           subtitle: Text(item.description, style: appTextStyles.body),
           contentPadding: EdgeInsets.fromLTRB(12, 0, 8, 0),
           trailing: GestureDetector(
             onTap: _pickColor,
-            child: ColorSwatchCircle(color: Color(value as int), radius: 20),
+            child: ColorSwatchCircle(color: Color(value), radius: 20),
           ).mouseRegion(),
         ),
       ),
@@ -221,15 +221,15 @@ class _UserPreferencesBodyState extends ConsumerState<UserPreferencesBody> {
         ],
       ),
       .closeToTray => _buildSwitchListTile(
-        item: item,
+        item: item as SettingsItem<bool>,
         onChanged: userPrefsCtrl.updateCloseToTray,
       ),
       .showTrayIcon => _buildSwitchListTile(
-        item: item,
+        item: item as SettingsItem<bool>,
         onChanged: userPrefsCtrl.updateShowTrayIcon,
       ),
       .autostart => _buildSwitchListTile(
-        item: item,
+        item: item as SettingsItem<bool>,
         onChanged: userPrefsCtrl.updateAutostart,
       ),
       .resetUserPrefs => _buildResetButton(item),
@@ -237,17 +237,17 @@ class _UserPreferencesBodyState extends ConsumerState<UserPreferencesBody> {
   }
 
   Widget _buildSwitchListTile({
-    required SettingsItem item,
+    required SettingsItem<bool> item,
     required ValueChanged<bool> onChanged,
   }) {
     final appTextStyles = ref.watch(appTextStylesProvider);
 
-    return _buildConsumer(
+    return _buildConsumer<bool>(
       item: item,
       childBuilder: (value) => SwitchListTile(
         title: Text(item.function, style: appTextStyles.bodyLarge),
         subtitle: Text(item.description, style: appTextStyles.body),
-        value: value as bool,
+        value: value,
         onChanged: onChanged,
         overlayColor: WidgetStatePropertyAll(Colors.transparent),
         shape: RoundedRectangleBorder(
@@ -258,9 +258,9 @@ class _UserPreferencesBodyState extends ConsumerState<UserPreferencesBody> {
     );
   }
 
-  Widget _buildConsumer({
-    required SettingsItem item,
-    required Widget Function(Object value) childBuilder,
+  Widget _buildConsumer<T>({
+    required SettingsItem<T> item,
+    required Widget Function(T value) childBuilder,
   }) {
     return Consumer(
       builder: (context, ref, _) {

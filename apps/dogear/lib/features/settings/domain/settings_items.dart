@@ -17,7 +17,7 @@ class SettingsCategory {
 
 enum SettingsItem<T> {
   // Shortcut
-  shortcut<HotKey>(
+  shortcut<HotKey?>(
     function: "Pin Active Window",
     description: "Global hotkey to pin/unpin windows",
   ),
@@ -67,7 +67,7 @@ enum SettingsItem<T> {
   T? get defaultValue {
     if (_defaultValue != null) return _defaultValue;
 
-    if (T == HotKey) {
+    if (this == .shortcut) {
       return UserPrefsDefaults.shortcutDefault as T;
     }
 
