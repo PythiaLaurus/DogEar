@@ -61,7 +61,7 @@ class _UserPreferencesBodyState extends ConsumerState<UserPreferencesBody> {
       builder: (context) {
         return AlertDialog(
           backgroundColor: appColors.background,
-          titlePadding: EdgeInsets.fromLTRB(30, 20, 30, 0),
+          titlePadding: EdgeInsets.fromLTRB(30, 20, 20, 0),
           title: Row(
             mainAxisAlignment: .spaceBetween,
             children: [
@@ -69,6 +69,7 @@ class _UserPreferencesBodyState extends ConsumerState<UserPreferencesBody> {
               IconButton(
                 onPressed: () => context.pop(),
                 visualDensity: .compact,
+                mouseCursor: SystemMouseCursors.click,
                 icon: Icon(Icons.close_rounded),
               ),
             ],
@@ -95,6 +96,9 @@ class _UserPreferencesBodyState extends ConsumerState<UserPreferencesBody> {
                 context.pop(true);
                 userPrefsCtrl.updateDogEarColor(colorSelectedArgb);
               },
+              style: ButtonStyle(
+                mouseCursor: WidgetStatePropertyAll(SystemMouseCursors.click),
+              ),
               child: const Text('Done'),
             ),
           ],
@@ -132,7 +136,10 @@ class _UserPreferencesBodyState extends ConsumerState<UserPreferencesBody> {
                 context.pop();
                 userPrefsCtrl.resetUserPrefs();
               },
-              style: ButtonStyle(visualDensity: VisualDensity.comfortable),
+              style: ButtonStyle(
+                visualDensity: VisualDensity.comfortable,
+                mouseCursor: WidgetStatePropertyAll(SystemMouseCursors.click),
+              ),
               child: Text(
                 'Confirm',
                 style: appTextStyles.bodyLarge.alertColor(),
@@ -142,6 +149,9 @@ class _UserPreferencesBodyState extends ConsumerState<UserPreferencesBody> {
               onPressed: () {
                 context.pop();
               },
+              style: ButtonStyle(
+                mouseCursor: WidgetStatePropertyAll(SystemMouseCursors.click),
+              ),
               child: Text(
                 'Cancel',
                 style: appTextStyles.bodyLarge.contextColor(context),
@@ -301,6 +311,7 @@ class _UserPreferencesBodyState extends ConsumerState<UserPreferencesBody> {
                   appTextStyles.bodySmall.nullColor(),
                 ),
                 overlayColor: WidgetStatePropertyAll(Colors.transparent),
+                mouseCursor: WidgetStatePropertyAll(SystemMouseCursors.click),
               ),
               child: Text(item.function),
             ),
