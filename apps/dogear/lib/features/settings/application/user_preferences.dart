@@ -10,6 +10,10 @@ import '../../../services/platform/tray.dart';
 import '../../topmost_overlay_orchestration/application/topmost_overlay_orchestrator.dart';
 import '../domain/user_preferences_state.dart';
 
+export '../domain/settings_items.dart';
+export '../domain/user_preferences_state.dart';
+export '../domain/user_prefs_extention.dart';
+
 part 'user_preferences.g.dart';
 
 @Riverpod(keepAlive: true)
@@ -69,10 +73,10 @@ class UserPreferences extends _$UserPreferences {
     final prevPrefs = state.value;
 
     if (prevPrefs == null) return;
-    if (prevPrefs.dogEarColorARGB == newColorARGB) return;
+    if (prevPrefs.dogEarColorArgb == newColorARGB) return;
 
     _applyDogEarColor(newColorARGB);
-    _saveUserPrefs(prevPrefs.copyWith(dogEarColorARGB: newColorARGB));
+    _saveUserPrefs(prevPrefs.copyWith(dogEarColorArgb: newColorARGB));
   }
 
   void _applyDogEarColor(int newColorARGB) {
@@ -88,7 +92,7 @@ class UserPreferences extends _$UserPreferences {
 
     if (prevPrefs == null) return;
 
-    _applyDogEarColor(prevPrefs.dogEarColorARGB);
+    _applyDogEarColor(prevPrefs.dogEarColorArgb);
   }
 
   /// Updates should app be closed to tray when clicking
@@ -155,7 +159,7 @@ class UserPreferences extends _$UserPreferences {
   /// Applies All User Preferences.
   Future<void> _applyAll(UserPreferencesState prefs) async {
     _applyShortcut(prefs.shortcut);
-    _applyDogEarColor(prefs.dogEarColorARGB);
+    _applyDogEarColor(prefs.dogEarColorArgb);
     _applyAutostart(prefs.autostart);
 
     await _initTray();
