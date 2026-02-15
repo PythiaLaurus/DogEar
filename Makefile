@@ -54,10 +54,17 @@ build-package: build package
 
 # Publishes the release to GitHub.
 publish:
-	@echo "Publishing to GitHub Release..."
+	@echo "Pushing commits to main..."
+	git push origin main
+	@echo "Creating local tag $(TAG_NAME)..."
+	git tag $(TAG_NAME)
+	@echo "Pushing tag to GitHub..."
+	git push origin $(TAG_NAME)
+	@echo "Creating GitHub Release and uploading $(EXE_FILE)..."
 	gh release create $(TAG_NAME) "$(EXE_FILE)" \
 		--title $(RELEASE_TITLE) \
-		--notes-file "$(NOTES_FILE)"
+		--notes-file "$(NOTES_FILE)" \
+		--verify-tag
 
 # Tools
 # Updates icons
