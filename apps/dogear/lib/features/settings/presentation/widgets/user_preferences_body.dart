@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hotkey_manager/hotkey_manager.dart';
 
 import '../../../../core/theme/theme.dart';
 import '../../../../core/widgets/color_picker/color_picker.dart';
@@ -8,8 +9,6 @@ import '../../../../core/widgets/shortcut_recorder.dart';
 import '../../../../core/widgets/theme_model_selector.dart';
 import '../../../topmost_overlay_orchestration/application/topmost_overlay_orchestrator.dart';
 import '../../application/user_preferences.dart';
-import '../../domain/settings_items.dart';
-import '../../domain/user_preferences_state.dart';
 
 class UserPreferencesBody extends ConsumerStatefulWidget {
   const UserPreferencesBody({super.key});
@@ -24,54 +23,21 @@ class _UserPreferencesBodyState extends ConsumerState<UserPreferencesBody> {
     SettingsCategory(
       icon: Icons.keyboard,
       title: "Shortcut",
-      items: [
-        SettingsItem(
-          type: SettingsItemType.shortcut,
-          function: "Pin Active Window",
-          description: "Global hotkey to pin/unpin windows",
-        ),
-      ],
+      items: [SettingsItem.shortcut],
     ),
     SettingsCategory(
       icon: Icons.palette,
       title: "Appearance",
-      items: [
-        SettingsItem(
-          type: SettingsItemType.dogEarColor,
-          function: "Dog Ear Color",
-          description: "Color of the overlay indicator",
-        ),
-        SettingsItem(
-          type: SettingsItemType.themeMode,
-          function: "App Theme",
-          description: "",
-        ),
-      ],
+      items: [SettingsItem.dogEarColor, SettingsItem.themeMode],
     ),
     SettingsCategory(
       icon: Icons.settings,
       title: "System",
       items: [
-        SettingsItem(
-          type: SettingsItemType.closeToTray,
-          function: "Close to Tray",
-          description: "Keep running in background when closed",
-        ),
-        SettingsItem(
-          type: SettingsItemType.showTrayIcon,
-          function: "Show Tray Icon",
-          description: "Show icon in system tray area",
-        ),
-        SettingsItem(
-          type: SettingsItemType.autostart,
-          function: "Autostart",
-          description: "Start Dog Ear automatically on system boot",
-        ),
-        SettingsItem(
-          type: SettingsItemType.resetUserPrefs,
-          function: "Reset all settings",
-          description: "",
-        ),
+        SettingsItem.closeToTray,
+        SettingsItem.showTrayIcon,
+        SettingsItem.autostart,
+        SettingsItem.resetUserPrefs,
       ],
     ),
   ];
@@ -79,13 +45,15 @@ class _UserPreferencesBodyState extends ConsumerState<UserPreferencesBody> {
   void _pickColor() async {
     final appColors = ref.watch(appColorsProvider);
     final appTextStyles = ref.watch(appTextStylesProvider);
-    final userPrefs =
-        ref.watch(userPreferencesProvider).value ??
-        UserPreferencesState.initialize();
+
     final userPrefsCtrl = ref.read(userPreferencesProvider.notifier);
     final orchestrator = ref.read(topmostOverlayOrchestratorProvider.notifier);
 
-    int colorSelectedARGB = userPrefs.dogEarColorARGB;
+    int colorSelectedArgb = ref.read(
+      userPreferencesProvider.select(
+        (s) => s.getPrefsField(SettingsItem.dogEarColor),
+      ),
+    );
 
     final result = await showDialog<bool>(
       context: context,
@@ -109,13 +77,13 @@ class _UserPreferencesBodyState extends ConsumerState<UserPreferencesBody> {
           content: SingleChildScrollView(
             padding: EdgeInsets.symmetric(horizontal: 20),
             child: ProColorPicker(
-              pickerColor: Color(colorSelectedARGB),
+              pickerColor: Color(colorSelectedArgb),
               onColorChanged: (color) {
-                final newColorARGB = color.toARGB32();
-                if (colorSelectedARGB == newColorARGB) return;
+                final newColorArgb = color.toARGB32();
+                if (colorSelectedArgb == newColorArgb) return;
 
                 setState(() {
-                  colorSelectedARGB = newColorARGB;
+                  colorSelectedArgb = newColorArgb;
                 });
                 orchestrator.updateOverlayColor(color);
               },
@@ -125,7 +93,7 @@ class _UserPreferencesBodyState extends ConsumerState<UserPreferencesBody> {
             TextButton(
               onPressed: () {
                 context.pop(true);
-                userPrefsCtrl.updateDogEarColor(colorSelectedARGB);
+                userPrefsCtrl.updateDogEarColor(colorSelectedArgb);
               },
               child: const Text('Done'),
             ),
@@ -142,6 +110,7 @@ class _UserPreferencesBodyState extends ConsumerState<UserPreferencesBody> {
   void _resetUserPrefs() {
     final appColors = ref.watch(appColorsProvider);
     final appTextStyles = ref.watch(appTextStylesProvider);
+
     final userPrefsCtrl = ref.read(userPreferencesProvider.notifier);
 
     showDialog(
@@ -186,8 +155,6 @@ class _UserPreferencesBodyState extends ConsumerState<UserPreferencesBody> {
 
   @override
   Widget build(BuildContext context) {
-    final prefsBuilders = _getUserPrefsBuilders();
-
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -197,11 +164,7 @@ class _UserPreferencesBodyState extends ConsumerState<UserPreferencesBody> {
           children: [
             _buildSectionHeader(title: cata.title, icon: cata.icon),
             const SizedBox(height: 6),
-            ...cata.items.map((item) {
-              final builder = prefsBuilders[item.type];
-              if (builder == null) return const SizedBox.shrink();
-              return builder(item);
-            }),
+            ...cata.items.map(_buildUserPrefsItem),
             const SizedBox(height: 24),
           ],
         );
@@ -209,111 +172,94 @@ class _UserPreferencesBodyState extends ConsumerState<UserPreferencesBody> {
     );
   }
 
-  Map<SettingsItemType, Widget Function(SettingsItem item)>
-  _getUserPrefsBuilders() {
+  Widget _buildUserPrefsItem(SettingsItem item) {
     final appTextStyles = ref.watch(appTextStylesProvider);
-    final userPrefs =
-        ref.watch(userPreferencesProvider).value ??
-        UserPreferencesState.initialize();
+
     final userPrefsCtrl = ref.read(userPreferencesProvider.notifier);
 
-    final widgetBuilders =
-        <SettingsItemType, Widget Function(SettingsItem item)>{
-          SettingsItemType.shortcut: (item) {
-            return ListTile(
-              title: Text(item.function, style: appTextStyles.bodyLarge),
-              subtitle: Text(item.description, style: appTextStyles.body),
-              trailing: ShortcutRecorder(
-                hotkeyDisplayed: userPrefs.shortcut,
-                onChanged: userPrefsCtrl.updateShortcut,
-              ).mouseRegion(cursor: SystemMouseCursors.click),
-            );
-          },
-          SettingsItemType.dogEarColor: (item) {
-            return ListTile(
-              title: Text(item.function, style: appTextStyles.bodyLarge),
-              subtitle: Text(item.description, style: appTextStyles.body),
-              contentPadding: EdgeInsets.fromLTRB(12, 0, 8, 0),
-              trailing: GestureDetector(
-                onTap: _pickColor,
-                child: ColorSwatchCircle(
-                  color: Color(userPrefs.dogEarColorARGB),
-                  radius: 20,
-                ),
-              ).mouseRegion(cursor: SystemMouseCursors.click),
-            );
-          },
-          SettingsItemType.themeMode: (item) {
-            return Column(
-              children: [
-                const SizedBox(height: 8),
-                ListTile(
-                  title: Text(item.function, style: appTextStyles.bodyLarge),
-                  trailing: ThemeModelSelector(),
-                ),
-              ],
-            );
-          },
-          SettingsItemType.closeToTray: (item) {
-            return _buildSwitchListTile(
-              item: item,
-              value: userPrefs.closeToTray,
-              onChanged: userPrefsCtrl.updateCloseToTray,
-            );
-          },
-          SettingsItemType.showTrayIcon: (item) {
-            return _buildSwitchListTile(
-              item: item,
-              value: userPrefs.showTrayIcon,
-              onChanged: userPrefsCtrl.updateShowTrayIcon,
-            );
-          },
-          SettingsItemType.autostart: (item) {
-            return _buildSwitchListTile(
-              item: item,
-              value: userPrefs.autostart,
-              onChanged: userPrefsCtrl.updateAutostart,
-            );
-          },
-          SettingsItemType.resetUserPrefs: (item) {
-            final appColors = ref.watch(appColorsProvider);
-            final appTextStyles = ref.watch(appTextStylesProvider);
+    return switch (item) {
+      .shortcut => _buildConsumer(
+        item: item,
+        childBuilder: (value) => ListTile(
+          title: Text(item.function, style: appTextStyles.bodyLarge),
+          subtitle: Text(item.description, style: appTextStyles.body),
+          trailing: ShortcutRecorder(
+            hotkeyDisplayed: value as HotKey?,
+            onChanged: userPrefsCtrl.updateShortcut,
+          ).mouseRegion(),
+        ),
+      ),
+      .dogEarColor => _buildConsumer(
+        item: item,
+        childBuilder: (value) => ListTile(
+          title: Text(item.function, style: appTextStyles.bodyLarge),
+          subtitle: Text(item.description, style: appTextStyles.body),
+          contentPadding: EdgeInsets.fromLTRB(12, 0, 8, 0),
+          trailing: GestureDetector(
+            onTap: _pickColor,
+            child: ColorSwatchCircle(color: Color(value as int), radius: 20),
+          ).mouseRegion(),
+        ),
+      ),
+      .themeMode => Column(
+        children: [
+          const SizedBox(height: 8),
+          ListTile(
+            title: Text(item.function, style: appTextStyles.bodyLarge),
+            trailing: ThemeModelSelector(),
+          ),
+        ],
+      ),
+      .closeToTray => _buildSwitchListTile(
+        item: item,
+        onChanged: userPrefsCtrl.updateCloseToTray,
+      ),
+      .showTrayIcon => _buildSwitchListTile(
+        item: item,
+        onChanged: userPrefsCtrl.updateShowTrayIcon,
+      ),
+      .autostart => _buildSwitchListTile(
+        item: item,
+        onChanged: userPrefsCtrl.updateAutostart,
+      ),
+      .resetUserPrefs => _buildResetButton(item),
+    };
+  }
 
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    TextButton(
-                      onPressed: () => _resetUserPrefs(),
-                      style: ButtonStyle(
-                        visualDensity: VisualDensity(
-                          horizontal: -4,
-                          vertical: -4,
-                        ),
-                        foregroundColor: appColors.stateResolved(
-                          hoverColor: Colors.red,
-                          normalColor: Theme.of(context).colorScheme.primary,
-                        ),
-                        textStyle: WidgetStatePropertyAll(
-                          appTextStyles.bodySmall.nullColor(),
-                        ),
-                        overlayColor: WidgetStatePropertyAll(
-                          Colors.transparent,
-                        ),
-                      ),
-                      child: Text(item.function),
-                    ),
-                  ],
-                ),
-              ],
-            );
-          },
-        };
+  Widget _buildSwitchListTile({
+    required SettingsItem item,
+    required ValueChanged<bool> onChanged,
+  }) {
+    final appTextStyles = ref.watch(appTextStylesProvider);
 
-    return widgetBuilders;
+    return _buildConsumer(
+      item: item,
+      childBuilder: (value) => SwitchListTile(
+        title: Text(item.function, style: appTextStyles.bodyLarge),
+        subtitle: Text(item.description, style: appTextStyles.body),
+        value: value as bool,
+        onChanged: onChanged,
+        overlayColor: WidgetStatePropertyAll(Colors.transparent),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(8)),
+        ),
+        trackOutlineColor: WidgetStatePropertyAll(Colors.transparent),
+      ),
+    );
+  }
+
+  Widget _buildConsumer({
+    required SettingsItem item,
+    required Widget Function(Object value) childBuilder,
+  }) {
+    return Consumer(
+      builder: (context, ref, _) {
+        final value = ref.watch(
+          userPreferencesProvider.select((s) => s.getPrefsField(item)),
+        );
+        return childBuilder(value);
+      },
+    );
   }
 
   Widget _buildSectionHeader({required String title, required IconData icon}) {
@@ -332,23 +278,35 @@ class _UserPreferencesBodyState extends ConsumerState<UserPreferencesBody> {
     );
   }
 
-  Widget _buildSwitchListTile({
-    required SettingsItem item,
-    required bool value,
-    required ValueChanged<bool> onChanged,
-  }) {
+  Widget _buildResetButton(SettingsItem item) {
+    final appColors = ref.watch(appColorsProvider);
     final appTextStyles = ref.watch(appTextStylesProvider);
 
-    return SwitchListTile(
-      title: Text(item.function, style: appTextStyles.bodyLarge),
-      subtitle: Text(item.description, style: appTextStyles.body),
-      value: value,
-      onChanged: onChanged,
-      overlayColor: WidgetStatePropertyAll(Colors.transparent),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(8)),
-      ),
-      trackOutlineColor: WidgetStatePropertyAll(Colors.transparent),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            TextButton(
+              onPressed: () => _resetUserPrefs(),
+              style: ButtonStyle(
+                visualDensity: VisualDensity(horizontal: -4, vertical: -4),
+                foregroundColor: appColors.stateResolved(
+                  hoverColor: Colors.red,
+                  normalColor: Theme.of(context).colorScheme.primary,
+                ),
+                textStyle: WidgetStatePropertyAll(
+                  appTextStyles.bodySmall.nullColor(),
+                ),
+                overlayColor: WidgetStatePropertyAll(Colors.transparent),
+              ),
+              child: Text(item.function),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
