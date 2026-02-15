@@ -1,10 +1,8 @@
 ### 🚀 What's New
 
-- **Improved Startup with Administrator Privileges**: Fixed an issue where the application could not launch on system startup if it was configured to require **administrator privileges**.
-  - Root cause: Applications that require elevation cannot be reliably auto-started via standard **registry-based startup entries**.
-  - Solution: The app now registers a **Windows Scheduled Task** that triggers on user logon and launches the application with elevated privileges.
-  - Requirement: To enable startup at login, the application itself must now be launched **as Administrator** so it can create the scheduled task.
+- **Interactive Feedback Polish**: Added missing mouse cursor indicators to all clickable areas. Interactive elements now consistently show a "hand" pointer on hover, making the interface more intuitive and predictable on desktop.
+- **Enhanced UI Responsiveness**: Optimized the internal rendering logic to ensure that only the specific parts of the screen being modified will refresh. This results in a much smoother experience when toggling settings or updating data.
 
 ### 🧹 Maintenance
 
-- **Dependency Cleanup**: Removed unused dependencies to reduce binary size and streamline maintenance.
+- **System Streamlining**: Optimized the application structure to improve overall stability and reduce memory overhead during navigation.

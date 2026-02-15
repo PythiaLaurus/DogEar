@@ -50,6 +50,8 @@ package:
 		$(PACKAGE_SCRIPT)
 	$(MAKE) gen-release-note
 
+build-package: build package
+
 # Publishes the release to GitHub.
 publish:
 	@echo "Publishing to GitHub Release..."
