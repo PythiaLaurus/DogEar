@@ -64,13 +64,12 @@ enum SettingsItem<T> {
   }) : _defaultValue = defaultValue;
 
   /// Returns default value for the setting item.
-  T? get defaultValue {
+  T get defaultValue {
     if (_defaultValue != null) return _defaultValue;
 
-    if (this == .shortcut) {
-      return UserPrefsDefaults.shortcutDefault as T;
-    }
-
-    return null;
+    return switch (this) {
+      SettingsItem.shortcut => UserPrefsDefaults.shortcutDefault as T,
+      _ => null as T,
+    };
   }
 }

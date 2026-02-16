@@ -17,7 +17,7 @@ extension UserPreferencesStateExtension on AsyncValue<UserPreferencesState> {
         (value?.showTrayIcon ?? item.defaultValue) as T,
       SettingsItem.autostart => (value?.autostart ?? item.defaultValue) as T,
 
-      _ => item.defaultValue as T,
+      _ => item.defaultValue,
     };
   }
 }
