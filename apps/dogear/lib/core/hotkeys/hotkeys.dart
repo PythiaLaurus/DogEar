@@ -43,8 +43,10 @@ class AppHotKeys {
 
   /// Unregister all hot keys.
   /// Call this when recording shortcut, so shortcuts already registered won't be triggered.
-  /// This is alse for debugging purposes, need to be called to support hot reload.<br>
-  /// Call in main function:<br>
+  /// This is alse for debugging purposes, need to be called to support hot reload.
+  ///
+  /// Call in main function:
+  ///
   /// ```dart
   /// await AppHotKeys.unregisterAll();
   /// ```
