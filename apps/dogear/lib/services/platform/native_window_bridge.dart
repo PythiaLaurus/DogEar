@@ -13,7 +13,7 @@ class NativeWindowBridge with NativaErrorLogger {
   static final instance = NativeWindowBridge._();
 
   @override
-  String get moduleName => "[NativeWindowBridge]";
+  String get moduleName => "NativeWindowBridge";
 
   /// [DestroyWindow].
   ///

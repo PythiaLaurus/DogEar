@@ -109,7 +109,7 @@ mixin NativaErrorLogger {
   /// Last error.
   /// Always be [NativeError.none] in production environment.
   NativeError get lastError =>
-      .formatted(_rawLastError, prefix: "$moduleName ");
+      .formatted(_rawLastError, prefix: "[$moduleName] ");
 
   /// Debug record.
   /// Only works in debug environment.
