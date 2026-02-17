@@ -3,6 +3,8 @@
 // Functions, types and constants that are not part of the implemented Dart Win32 API.
 
 import 'dart:ffi';
+import 'package:ffi/ffi.dart';
+import 'package:flutter/foundation.dart' show protected;
 import 'package:win32/win32.dart';
 
 // Win32 API DLL
@@ -25,6 +27,101 @@ typedef WinEventProc =
 final class TOKEN_ELEVATION extends Struct {
   @Uint32()
   external int TokenIsElevated;
+}
+
+/// Native error type.
+extension type const NativeError._(
+  ({String function, int code, String message}) _
+) {
+  String get function => _.function;
+  int get code => _.code;
+  String get message => _.message;
+
+  static const none = NativeError(function: "None", code: 0, message: "");
+
+  bool get isNone => this == none;
+  bool get isNotNone => this != none;
+
+  const NativeError({
+    required String function,
+    required int code,
+    required String message,
+  }) : this._((function: function, code: code, message: message));
+
+  /// Format [NativeError] with an optional prefix for returned [error.function] if the passed in [error.code] is not 0.
+  factory NativeError.formatted(NativeError error, {String prefix = ""}) {
+    var NativeError(:function, :code, :message) = error;
+    if (code == 0) return none;
+
+    final buffer = calloc<Pointer<Utf16>>();
+    const flags =
+        FORMAT_MESSAGE_ALLOCATE_BUFFER |
+        FORMAT_MESSAGE_FROM_SYSTEM |
+        FORMAT_MESSAGE_IGNORE_INSERTS;
+
+    final length = FormatMessage(
+      flags,
+      nullptr,
+      code,
+      0,
+      buffer.cast(),
+      0,
+      nullptr,
+    );
+
+    if (length == 0) {
+      calloc.free(buffer);
+      return NativeError(function: "$prefix$function", code: code, message: "");
+    }
+
+    final messagePtr = buffer.value;
+    message = messagePtr.toDartString().trim();
+    LocalFree(messagePtr);
+    calloc.free(buffer);
+
+    return NativeError(
+      function: "$prefix$function",
+      code: code,
+      message: message,
+    );
+  }
+
+  /// Returns a [NativeError] with code as [GetLastError] and message empty.
+  factory NativeError.logRaw(String function) {
+    final errorCode = GetLastError();
+    return errorCode != 0
+        ? NativeError(function: function, code: errorCode, message: "")
+        : none;
+  }
+}
+
+/// A [NativeError] logger mixin.
+/// Provides last error.
+mixin NativaErrorLogger {
+  /// Name of the module using mixin [NativaErrorLogger].
+  ///
+  /// Must be override.
+  String get moduleName;
+
+  // Default error
+  NativeError _rawLastError = .none;
+
+  /// Last error.
+  /// Always be [NativeError.none] in production environment.
+  NativeError get lastError =>
+      .formatted(_rawLastError, prefix: "$moduleName ");
+
+  /// Debug record.
+  /// Only works in debug environment.
+  @protected
+  void log(String function) {
+    assert(() {
+      if (NativeError.logRaw(function) case final err when err.isNotNone) {
+        _rawLastError = err;
+      }
+      return true;
+    }());
+  }
 }
 
 /// The event ID for location change.

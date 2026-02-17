@@ -3,11 +3,14 @@ import 'dart:io';
 import 'package:ffi/ffi.dart';
 import 'package:win32/win32.dart';
 
-import 'win32_extension.dart';
+import 'native_extension.dart';
 
-class NativePrivilegeManager {
+class NativePrivilegeManager with NativaErrorLogger {
   NativePrivilegeManager._();
   static final instance = NativePrivilegeManager._();
+
+  @override
+  String get moduleName => "NativePrivilegeManager";
 
   /// Checks if the app is running with administrative privileges.
   ///
@@ -45,6 +48,7 @@ class NativePrivilegeManager {
       }
     } finally {
       calloc.free(phToken);
+      log("isAppRunAsAdmin");
     }
   }
 
@@ -94,6 +98,7 @@ class NativePrivilegeManager {
       calloc.free(pFile);
       calloc.free(pDir);
       calloc.free(pParameters);
+      log("requestAdminPrivileges");
     }
   }
 }

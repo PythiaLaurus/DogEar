@@ -4,14 +4,16 @@ import 'dart:ffi';
 import 'dart:math' as math;
 
 import 'package:ffi/ffi.dart';
-import 'package:flutter/material.dart' show debugPrint;
 import 'package:win32/win32.dart';
 
-import 'win32_extension.dart';
+import 'native_extension.dart';
 
-class NativeWindowBridge {
+class NativeWindowBridge with NativaErrorLogger {
   NativeWindowBridge._();
   static final instance = NativeWindowBridge._();
+
+  @override
+  String get moduleName => "[NativeWindowBridge]";
 
   /// [DestroyWindow].
   ///
@@ -23,7 +25,7 @@ class NativeWindowBridge {
   /// Note: A window cannot be destroyed if it was created by another thread.
   bool destroyWindow(int hwnd) {
     final result = DestroyWindow(hwnd);
-    _log("destroyWindow");
+    log("destroyWindow");
     return result != 0;
   }
 
@@ -36,7 +38,7 @@ class NativeWindowBridge {
   /// Returns true if the window was successfully brought to the foreground.
   bool setForegroundWindow(int hwnd) {
     final result = SetForegroundWindow(hwnd);
-    _log("setForegroundWindow");
+    log("setForegroundWindow");
     return result != 0;
   }
 
@@ -64,7 +66,7 @@ class NativeWindowBridge {
   /// Returns true if the function succeeds; otherwise false.
   bool updateWindow(int hwnd) {
     final result = UpdateWindow(hwnd);
-    _log("updateWindow");
+    log("updateWindow");
     return result != 0;
   }
 
@@ -173,7 +175,7 @@ class NativeWindowBridge {
     final result = SetWindowPos(hwnd, insertAfter, 0, 0, 0, 0, flags);
 
     if (result == 0) {
-      _log("setTopmost");
+      log("setTopmost");
       return false;
     }
 
@@ -201,7 +203,7 @@ class NativeWindowBridge {
       final result = GetCursorPos(pPoint);
       if (result == 0) {
         // Return 0 if failed
-        _log("getUnderCursorWindowHandle");
+        log("getUnderCursorWindowHandle");
         return 0;
       }
 
@@ -288,7 +290,7 @@ class NativeWindowBridge {
         CloseHandle(hProcess);
       }
     } finally {
-      _log("getProcessName");
+      log("getProcessName");
       calloc.free(processIdPtr);
     }
 
@@ -334,7 +336,7 @@ class NativeWindowBridge {
       }
       return null;
     } finally {
-      _log("getWindowRect");
+      log("getWindowRect");
       calloc.free(rect);
     }
   }
@@ -360,7 +362,7 @@ class NativeWindowBridge {
     int uFlags,
   ) {
     final result = SetWindowPos(hwnd, hwndInsertAfter, x, y, cx, cy, uFlags);
-    _log("setWindowPos");
+    log("setWindowPos");
     return result != 0;
   }
 
@@ -380,7 +382,7 @@ class NativeWindowBridge {
 
       return CreatePolygonRgn(lpPoints, points.length, WINDING);
     } finally {
-      _log("createPolygonRgn");
+      log("createPolygonRgn");
       calloc.free(lpPoints);
     }
   }
@@ -408,7 +410,7 @@ class NativeWindowBridge {
 
     if (result == 0) {
       DeleteObject(hRgn);
-      _log("setWindowRgn");
+      log("setWindowRgn");
       return false;
     }
 
@@ -431,7 +433,7 @@ class NativeWindowBridge {
   /// Returns true if the function succeeds; otherwise false.
   bool invalidateRect(int hwnd, Pointer<RECT> lpRect, bool bErase) {
     final result = InvalidateRect(hwnd, lpRect, bErase ? TRUE : FALSE);
-    _log("invalidateRect");
+    log("invalidateRect");
     return result != 0;
   }
 
@@ -449,7 +451,7 @@ class NativeWindowBridge {
   /// Returns 0 on failure.
   int setClassLongPtr(int hwnd, int nIndex, int dwNewLong) {
     final result = SetClassLongPtr(hwnd, nIndex, dwNewLong);
-    _log("setClassLongPtr");
+    log("setClassLongPtr");
     return result;
   }
 
@@ -477,7 +479,7 @@ class NativeWindowBridge {
     int dwFlags,
   ) {
     final result = SetLayeredWindowAttributes(hwnd, crKey, bAlpha, dwFlags);
-    _log("setLayeredWindowAttributes");
+    log("setLayeredWindowAttributes");
     return result != 0;
   }
 
@@ -530,7 +532,7 @@ class NativeWindowBridge {
         lpParam,
       );
     } finally {
-      _log("createWindowEx");
+      log("createWindowEx");
       calloc.free(className);
       calloc.free(windowName);
     }
@@ -548,7 +550,7 @@ class NativeWindowBridge {
     try {
       return GetModuleHandle(name);
     } finally {
-      _log("getModuleHandle");
+      log("getModuleHandle");
       calloc.free(name);
     }
   }
@@ -585,7 +587,7 @@ class NativeWindowBridge {
       idThread,
       dwFlags,
     );
-    _log('setWinEventHook');
+    log("setWinEventHook");
     return result;
   }
 
@@ -597,21 +599,23 @@ class NativeWindowBridge {
   /// Returns true if successful; otherwise, returns false.
   bool unhookWinEvent(int hWinEventHook) {
     final result = UnhookWinEvent(hWinEventHook);
-    _log('unhookWinEvent');
+    log("unhookWinEvent");
     return result != 0;
   }
 
   /// Registers a window class, used to call [CreateWindowEx] (with
   /// lpszClassName set to [lpWndClass]).
-  /// Return an ATOM, representing a unique code for the class registered.
-  /// Return 0 if failed.
+  ///
+  /// Returns an ATOM, representing a unique code for the class registered.
+  ///
+  /// Returns 0 if failed.
   int registerClass(WNDCLASS lpWndClass) {
     final ptr = calloc<WNDCLASS>();
     try {
       ptr.ref = lpWndClass;
       return RegisterClass(ptr);
     } finally {
-      _log('registerClass');
+      log("registerClass");
       calloc.free(ptr);
     }
   }
@@ -629,7 +633,7 @@ class NativeWindowBridge {
     try {
       return UnregisterClass(className, hInstance) != 0;
     } finally {
-      _log('unregisterClass');
+      log("unregisterClass");
       calloc.free(className);
     }
   }
@@ -652,55 +656,9 @@ class NativeWindowBridge {
 
       return buffer.toDartString();
     } finally {
-      _log('getClassName');
+      log("getClassName");
       calloc.free(buffer);
     }
-  }
-
-  /// DebugPrint.
-  void _log(String functionName) {
-    assert(() {
-      final errorCode = GetLastError();
-      if (errorCode == 0) return true;
-
-      final formatted = _formatError(errorCode);
-      debugPrint(
-        '[Native Window Bridge] $functionName failed | Error $errorCode: $formatted',
-      );
-      return true;
-    }());
-  }
-
-  /// Finds actual error message from error code and format it.
-  /// Used by [_log].
-  String _formatError(int errorCode) {
-    final buffer = calloc<Pointer<Utf16>>();
-    const flags =
-        FORMAT_MESSAGE_ALLOCATE_BUFFER |
-        FORMAT_MESSAGE_FROM_SYSTEM |
-        FORMAT_MESSAGE_IGNORE_INSERTS;
-
-    final length = FormatMessage(
-      flags,
-      nullptr,
-      errorCode,
-      0,
-      buffer.cast(),
-      0,
-      nullptr,
-    );
-
-    if (length == 0) {
-      calloc.free(buffer);
-      return 'Windows error $errorCode';
-    }
-
-    final messagePtr = buffer.value;
-    final message = messagePtr.toDartString().trim();
-    LocalFree(messagePtr);
-    calloc.free(buffer);
-
-    return message;
   }
 }
 
