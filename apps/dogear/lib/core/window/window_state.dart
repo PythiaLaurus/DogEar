@@ -11,13 +11,26 @@ part 'window_state.g.dart';
 enum WindowStateStatus { normal, maximized, fullScreen, docked }
 
 @Riverpod(keepAlive: true)
-class WindowState extends _$WindowState with WindowListener {
+class WindowState extends _$WindowState
+    with WindowListener
+    implements Finalizable {
+  // Internal window state cache
   bool _isDocked = false;
   int? _hwnd;
 
+  // Native Resources
+  late final Pointer<RECT> _rectPtr;
+  late final Pointer<MONITORINFO> _monitorInfoPtr;
+
+  static final _finalizer = NativeFinalizer(calloc.nativeFree);
+
   @override
   WindowStateStatus build() {
-    _init();
+    // Initialize native resources
+    _initNativeResources();
+
+    // Initialize window state
+    _initWindowState();
     return WindowStateStatus.normal;
   }
 
@@ -27,29 +40,18 @@ class WindowState extends _$WindowState with WindowListener {
     }
     final hwnd = _hwnd!;
 
-    final rect = calloc<RECT>();
-    GetWindowRect(hwnd, rect);
-
-    // Window position
-    final left = rect.ref.left;
-    final top = rect.ref.top;
-    final right = rect.ref.right;
-    final bottom = rect.ref.bottom;
-
-    calloc.free(rect);
+    if (GetWindowRect(hwnd, _rectPtr) == 0) return false;
 
     final monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
-    final monitorInfo = calloc<MONITORINFO>();
-    monitorInfo.ref.cbSize = sizeOf<MONITORINFO>();
-    GetMonitorInfo(monitor, monitorInfo);
+    if (GetMonitorInfo(monitor, _monitorInfoPtr) == 0) return false;
 
-    final m = monitorInfo.ref.rcWork;
-    calloc.free(monitorInfo);
+    final r = _rectPtr.ref;
+    final m = _monitorInfoPtr.ref.rcWork;
 
-    final leftDist = left - m.left;
-    final topDist = top - m.top;
-    final rightDist = m.right - right;
-    final bottomDist = m.bottom - bottom;
+    final leftDist = r.left - m.left;
+    final topDist = r.top - m.top;
+    final rightDist = m.right - r.right;
+    final bottomDist = m.bottom - r.bottom;
 
     int dockedSideCount = 0;
     if (leftDist == 0) dockedSideCount++;
@@ -60,18 +62,30 @@ class WindowState extends _$WindowState with WindowListener {
     return dockedSideCount == 2 || dockedSideCount == 3;
   }
 
-  Future<void> _init() async {
+  void _initNativeResources() {
+    _rectPtr = calloc<RECT>();
+    _monitorInfoPtr = calloc<MONITORINFO>();
+    _monitorInfoPtr.ref.cbSize = sizeOf<MONITORINFO>();
+
+    _finalizer.attach(this, _rectPtr.cast(), detach: this);
+    _finalizer.attach(this, _monitorInfoPtr.cast(), detach: this);
+
+    ref.onDispose(() {
+      free(_rectPtr);
+      free(_monitorInfoPtr);
+    });
+  }
+
+  Future<void> _initWindowState() async {
     // Check initial state
     bool isMaximized = await windowManager.isMaximized();
     bool isFullScreen = await windowManager.isFullScreen();
 
-    final savedState = isFullScreen
+    state = isFullScreen
         ? WindowStateStatus.fullScreen
         : isMaximized
         ? WindowStateStatus.maximized
         : WindowStateStatus.normal;
-
-    state = savedState;
 
     windowManager.addListener(this);
     ref.onDispose(() => windowManager.removeListener(this));
@@ -107,12 +121,4 @@ class WindowState extends _$WindowState with WindowListener {
       }
     }
   }
-
-  // @override
-  // void onWindowResized() {
-  //   _isDocked = isDocked();
-  //   if (!_isDocked) {
-  //     state = WindowStateStatus.normal;
-  //   }
-  // }
 }
