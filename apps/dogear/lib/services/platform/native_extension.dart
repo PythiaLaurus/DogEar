@@ -48,7 +48,9 @@ extension type const NativeError._(
     required String message,
   }) : this._((function: function, code: code, message: message));
 
-  /// Format [NativeError] with an optional prefix for returned [error.function] if the passed in [error.code] is not 0.
+  /// Format [NativeError] with an optional prefix for returned [NativeError.function] if the passed in [error.code] is not 0.
+  ///
+  /// e.g. with [prefix] passed in as "[module A] ", the [NativeError.function] returned will be "[module A] function".
   factory NativeError.formatted(NativeError error, {String prefix = ""}) {
     var NativeError(:function, :code, :message) = error;
     if (code == 0) return none;
