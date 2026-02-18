@@ -100,14 +100,14 @@ mixin NativaErrorLogger {
     );
 
     if (length == 0) {
-      calloc.free(buffer);
+      free(buffer);
       return NativeError(function: "$prefix$function", code: code, message: "");
     }
 
     final messagePtr = buffer.value;
     message = messagePtr.toDartString().trim();
     LocalFree(messagePtr);
-    calloc.free(buffer);
+    free(buffer);
 
     return NativeError(
       function: "$prefix$function",

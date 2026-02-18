@@ -99,7 +99,7 @@ class NativeWindowBridge with NativaErrorLogger {
         if (cloakedPtr.value != 0) return false;
       }
     } finally {
-      calloc.free(cloakedPtr);
+      free(cloakedPtr);
     }
 
     return true;
@@ -284,14 +284,14 @@ class NativeWindowBridge with NativaErrorLogger {
             processName = buffer.toDartString();
           }
         } finally {
-          calloc.free(buffer);
+          free(buffer);
         }
       } finally {
         CloseHandle(hProcess);
       }
     } finally {
       log("getProcessName");
-      calloc.free(processIdPtr);
+      free(processIdPtr);
     }
 
     return processName.isEmpty ? null : processName;
@@ -337,7 +337,7 @@ class NativeWindowBridge with NativaErrorLogger {
       return null;
     } finally {
       log("getWindowRect");
-      calloc.free(rect);
+      free(rect);
     }
   }
 
@@ -383,7 +383,7 @@ class NativeWindowBridge with NativaErrorLogger {
       return CreatePolygonRgn(lpPoints, points.length, WINDING);
     } finally {
       log("createPolygonRgn");
-      calloc.free(lpPoints);
+      free(lpPoints);
     }
   }
 
@@ -533,8 +533,8 @@ class NativeWindowBridge with NativaErrorLogger {
       );
     } finally {
       log("createWindowEx");
-      calloc.free(className);
-      calloc.free(windowName);
+      free(className);
+      free(windowName);
     }
   }
 
@@ -551,7 +551,7 @@ class NativeWindowBridge with NativaErrorLogger {
       return GetModuleHandle(name);
     } finally {
       log("getModuleHandle");
-      calloc.free(name);
+      free(name);
     }
   }
 
@@ -616,7 +616,7 @@ class NativeWindowBridge with NativaErrorLogger {
       return RegisterClass(ptr);
     } finally {
       log("registerClass");
-      calloc.free(ptr);
+      free(ptr);
     }
   }
 
@@ -634,7 +634,7 @@ class NativeWindowBridge with NativaErrorLogger {
       return UnregisterClass(className, hInstance) != 0;
     } finally {
       log("unregisterClass");
-      calloc.free(className);
+      free(className);
     }
   }
 
@@ -657,7 +657,7 @@ class NativeWindowBridge with NativaErrorLogger {
       return buffer.toDartString();
     } finally {
       log("getClassName");
-      calloc.free(buffer);
+      free(buffer);
     }
   }
 }

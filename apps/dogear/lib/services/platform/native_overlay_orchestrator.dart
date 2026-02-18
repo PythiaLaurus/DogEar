@@ -241,8 +241,8 @@ class NativeOverlayOrchestrator {
         _isClassRegistered = true;
       }
     } finally {
-      calloc.free(wndClass);
-      calloc.free(classNamePtr);
+      free(wndClass);
+      free(classNamePtr);
     }
   }
 

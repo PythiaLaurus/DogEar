@@ -59,10 +59,10 @@ class NativePrivilegeManager with NativaErrorLogger {
       // Exit the current instance after launching the new one
       exit(0);
     } finally {
-      calloc.free(pOperation);
-      calloc.free(pFile);
-      calloc.free(pDir);
-      calloc.free(pParameters);
+      free(pOperation);
+      free(pFile);
+      free(pDir);
+      free(pParameters);
       log("requestAdminPrivileges");
     }
   }
@@ -96,11 +96,11 @@ class NativePrivilegeManager with NativaErrorLogger {
         return pElevation.ref.TokenIsElevated != 0;
       } finally {
         CloseHandle(hToken);
-        calloc.free(pElevation);
-        calloc.free(pReturnLength);
+        free(pElevation);
+        free(pReturnLength);
       }
     } finally {
-      calloc.free(phToken);
+      free(phToken);
       log("isAppRunAsAdmin");
     }
   }
