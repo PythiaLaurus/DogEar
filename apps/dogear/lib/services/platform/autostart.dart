@@ -19,7 +19,7 @@ class AppAutostart {
     if (await isEnabled() == enabled) return;
 
     // Check if the app is running with administrative privileges. If not, request admin privileges to enable/disable autostart.
-    if (!nativePrivilegeManager.isAppRunAsAdmin()) {
+    if (!nativePrivilegeManager.isRunningAsAdmin) {
       nativePrivilegeManager.requestAdminPrivileges([AppConfig.argSilent]);
       return;
     }

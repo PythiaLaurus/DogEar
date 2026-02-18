@@ -12,45 +12,10 @@ class NativePrivilegeManager with NativaErrorLogger {
   @override
   String get moduleName => "NativePrivilegeManager";
 
-  /// Checks if the app is running with administrative privileges.
-  ///
-  /// Returns true if the app is running with administrative privileges, false otherwise.
-  bool isAppRunAsAdmin() {
-    // Get the current process handle
-    final hProcess = GetCurrentProcess();
-    final phToken = calloc<HANDLE>();
+  bool? _isRunningAsAdmin;
 
-    try {
-      // Open the access token associated with the current process
-      if (OpenProcessToken(hProcess, TOKEN_QUERY, phToken) == 0) {
-        return false;
-      }
-
-      final hToken = phToken.value;
-      final pElevation = calloc<TOKEN_ELEVATION>();
-      final pReturnLength = calloc<DWORD>();
-
-      try {
-        final result = GetTokenInformation(
-          hToken,
-          TokenElevation,
-          pElevation,
-          sizeOf<TOKEN_ELEVATION>(),
-          pReturnLength,
-        );
-        if (result == 0) return false;
-
-        return pElevation.ref.TokenIsElevated != 0;
-      } finally {
-        CloseHandle(hToken);
-        calloc.free(pElevation);
-        calloc.free(pReturnLength);
-      }
-    } finally {
-      calloc.free(phToken);
-      log("isAppRunAsAdmin");
-    }
-  }
+  /// Whether the app is running with administrative privileges.
+  bool get isRunningAsAdmin => _isRunningAsAdmin ??= _checkRunningAsAdmin();
 
   /// Requests administrative privileges by relaunching the app with elevated permissions using ShellExecute.
   void requestAdminPrivileges([List<String>? arguments]) {
@@ -99,6 +64,44 @@ class NativePrivilegeManager with NativaErrorLogger {
       calloc.free(pDir);
       calloc.free(pParameters);
       log("requestAdminPrivileges");
+    }
+  }
+
+  /// Check whether the app is running with administrative privileges.
+  bool _checkRunningAsAdmin() {
+    // Get the current process handle
+    final hProcess = GetCurrentProcess();
+    final phToken = calloc<HANDLE>();
+
+    try {
+      // Open the access token associated with the current process
+      if (OpenProcessToken(hProcess, TOKEN_QUERY, phToken) == 0) {
+        return false;
+      }
+
+      final hToken = phToken.value;
+      final pElevation = calloc<TOKEN_ELEVATION>();
+      final pReturnLength = calloc<DWORD>();
+
+      try {
+        final result = GetTokenInformation(
+          hToken,
+          TokenElevation,
+          pElevation,
+          sizeOf<TOKEN_ELEVATION>(),
+          pReturnLength,
+        );
+        if (result == 0) return false;
+
+        return pElevation.ref.TokenIsElevated != 0;
+      } finally {
+        CloseHandle(hToken);
+        calloc.free(pElevation);
+        calloc.free(pReturnLength);
+      }
+    } finally {
+      calloc.free(phToken);
+      log("isAppRunAsAdmin");
     }
   }
 }
