@@ -1,23 +1,16 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'settings_items.dart';
 import 'user_preferences_state.dart';
 
-extension UserPreferencesStateExtension on AsyncValue<UserPreferencesState> {
+extension UserPreferencesStateExtension on UserPreferencesState {
   T getPrefsField<T>(SettingsItem<T> item) {
     return switch (item) {
-      _ when T == typeOf<void>() => null as T,
+      .shortcut => shortcut as T,
+      .dogEarColor => dogEarColorArgb as T,
+      .closeToTray => closeToTray as T,
+      .showTrayIcon => showTrayIcon as T,
+      .autostart => autostart as T,
 
-      SettingsItem.shortcut => (value?.shortcut ?? item.defaultValue) as T,
-      SettingsItem.dogEarColor =>
-        (value?.dogEarColorArgb ?? item.defaultValue) as T,
-      SettingsItem.closeToTray =>
-        (value?.closeToTray ?? item.defaultValue) as T,
-      SettingsItem.showTrayIcon =>
-        (value?.showTrayIcon ?? item.defaultValue) as T,
-      SettingsItem.autostart => (value?.autostart ?? item.defaultValue) as T,
-
-      _ => item.defaultValue,
+      .themeMode || .resetUserPrefs => null as T,
     };
   }
 }

@@ -21,28 +21,31 @@ class UserPreferences extends _$UserPreferences {
   static const String _kStorage = "settings.userPreferences";
 
   @override
-  Future<UserPreferencesState> build() async {
+  UserPreferencesState build() {
+    _init();
+    return UserPreferencesState.initialize();
+  }
+
+  /// Asynchronous initialize.
+  Future<void> _init() async {
     final savedPrefsJson = await appStorage.getJson(_kStorage);
 
     if (savedPrefsJson != null) {
       final savedPrefs = UserPreferencesState.fromJson(savedPrefsJson);
       _applyAll(savedPrefs);
 
-      return savedPrefs;
+      state = savedPrefs;
+      return;
     }
 
     final prefs = UserPreferencesState.initialize();
     _applyAll(prefs);
     _saveUserPrefs(prefs);
-
-    return prefs;
   }
 
   /// Updates shortcut.
   void updateShortcut(HotKey? hotkey) {
-    final prevPrefs = state.value;
-
-    if (prevPrefs == null) return;
+    final prevPrefs = state;
     if (prevPrefs.shortcut == hotkey) return;
 
     _applyShortcut(hotkey);
@@ -50,7 +53,7 @@ class UserPreferences extends _$UserPreferences {
   }
 
   void _applyShortcut(HotKey? newKey) {
-    final prevKey = state.value?.shortcut;
+    final prevKey = state.shortcut;
 
     if (prevKey != null) {
       appHotKeys.unregister(prevKey);
@@ -62,7 +65,7 @@ class UserPreferences extends _$UserPreferences {
     final newHotkeyBinding = HotKeyBinding(
       hotKey: newKey,
       keyDownHandler: (hotkey) {
-        orchestrator.autoAddRemoveForegroundWindow();
+        orchestrator.autoAddRemoveUnderCursorWindow();
       },
     );
     appHotKeys.register(newHotkeyBinding);
@@ -70,9 +73,7 @@ class UserPreferences extends _$UserPreferences {
 
   /// Updates dog ear color.
   void updateDogEarColor(int newColorARGB) {
-    final prevPrefs = state.value;
-
-    if (prevPrefs == null) return;
+    final prevPrefs = state;
     if (prevPrefs.dogEarColorArgb == newColorARGB) return;
 
     _applyDogEarColor(newColorARGB);
@@ -88,19 +89,14 @@ class UserPreferences extends _$UserPreferences {
   ///
   /// Used after color picking dialog is closed without confirmation.
   void reapplyDogEarColor() {
-    final prevPrefs = state.value;
-
-    if (prevPrefs == null) return;
-
+    final prevPrefs = state;
     _applyDogEarColor(prevPrefs.dogEarColorArgb);
   }
 
   /// Updates should app be closed to tray when clicking
   /// on the close button on app bar.
   void updateCloseToTray(bool value) {
-    final prevPrefs = state.value;
-
-    if (prevPrefs == null) return;
+    final prevPrefs = state;
     if (prevPrefs.closeToTray == value) return;
 
     _applyCloseToTray(value);
@@ -113,9 +109,7 @@ class UserPreferences extends _$UserPreferences {
 
   /// Shows tray icon.
   void updateShowTrayIcon(bool value) {
-    final prevPrefs = state.value;
-
-    if (prevPrefs == null) return;
+    final prevPrefs = state;
     if (prevPrefs.showTrayIcon == value) return;
 
     _applyShowTrayIcon(value);
@@ -130,9 +124,7 @@ class UserPreferences extends _$UserPreferences {
   ///
   /// Will be auto applied by [AppAutostart].
   void updateAutostart(bool value) {
-    final prevPrefs = state.value;
-
-    if (prevPrefs == null) return;
+    final prevPrefs = state;
     if (prevPrefs.autostart == value) return;
 
     _applyAutostart(value);
@@ -152,7 +144,7 @@ class UserPreferences extends _$UserPreferences {
 
   /// Saves All User Preferences.
   void _saveUserPrefs(UserPreferencesState newPrefs) {
-    state = AsyncValue.data(newPrefs);
+    state = newPrefs;
     appStorage.setJson(_kStorage, newPrefs.toJson());
   }
 
