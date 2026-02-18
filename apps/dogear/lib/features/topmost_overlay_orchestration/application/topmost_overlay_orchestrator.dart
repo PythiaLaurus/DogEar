@@ -27,7 +27,7 @@ class TopmostOverlayOrchestrator extends _$TopmostOverlayOrchestrator {
     return TopmostOverlayOrchestratorState();
   }
 
-  void autoAddRemoveForegroundWindow() {
+  void autoAddRemoveUnderCursorWindow() {
     final curForeWindowHwnd = nativeWindowBridge.getForegroundWindowHandle();
 
     final result = nativeWindowBridge.toggleUnderCursorWindowTopmost();
