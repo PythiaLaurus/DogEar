@@ -223,24 +223,27 @@ class NativeOverlayOrchestrator {
 
     final wndClass = calloc<WNDCLASS>();
 
-    wndClass.ref.style = CS_HREDRAW | CS_VREDRAW;
-    wndClass.ref.lpfnWndProc = DefWindowProcWPtr;
-    wndClass.ref.cbClsExtra = 0;
-    wndClass.ref.cbWndExtra = 0;
-    wndClass.ref.hInstance = hInst;
-    wndClass.ref.hIcon = 0;
-    wndClass.ref.hCursor = LoadCursor(0, IDC_ARROW);
-    // By set [hbrBackground] to 0, erasing step is invisible to the user
-    // when calling [invalidateRect]
-    wndClass.ref.hbrBackground = 0;
-    wndClass.ref.lpszMenuName = nullptr;
-    wndClass.ref.lpszClassName = classNamePtr;
+    try {
+      wndClass.ref.style = CS_HREDRAW | CS_VREDRAW;
+      wndClass.ref.lpfnWndProc = DefWindowProcWPtr;
+      wndClass.ref.cbClsExtra = 0;
+      wndClass.ref.cbWndExtra = 0;
+      wndClass.ref.hInstance = hInst;
+      wndClass.ref.hIcon = 0;
+      wndClass.ref.hCursor = LoadCursor(0, IDC_ARROW);
+      // By set [hbrBackground] to 0, erasing step is invisible to the user
+      // when calling [invalidateRect]
+      wndClass.ref.hbrBackground = 0;
+      wndClass.ref.lpszMenuName = nullptr;
+      wndClass.ref.lpszClassName = classNamePtr;
 
-    if (nativeWindowBridge.registerClass(wndClass.ref) != 0) {
-      _isClassRegistered = true;
+      if (nativeWindowBridge.registerClass(wndClass.ref) != 0) {
+        _isClassRegistered = true;
+      }
+    } finally {
+      calloc.free(wndClass);
+      calloc.free(classNamePtr);
     }
-    calloc.free(wndClass);
-    calloc.free(classNamePtr);
   }
 
   /// Disposes resources.
