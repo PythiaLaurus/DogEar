@@ -7,43 +7,69 @@ class AppHotKeys {
   AppHotKeys._();
   static final instance = AppHotKeys._();
 
+  bool _isPaused = false;
+
+  /// Whether hotkeys are paused.
+  bool get isPaused => _isPaused;
+
   /// All hot keys registered will be saved here.
-  List<HotKey> get allHotKeys => hotKeyManager.registeredHotKeyList;
+  final hotKeyToBindings = <HotKey, HotKeyBinding>{};
 
   /// Register a hotkey
   Future<void> register(HotKeyBinding hotKeyBinding) async {
-    if (allHotKeys.contains(hotKeyBinding.hotKey)) {
-      await hotKeyManager.unregister(hotKeyBinding.hotKey);
+    final hotKey = hotKeyBinding.hotKey;
+    if (hotKeyToBindings[hotKey] != null) {
+      await hotKeyManager.unregister(hotKey);
+      hotKeyToBindings.remove(hotKey);
     }
 
-    await hotKeyManager.register(
-      hotKeyBinding.hotKey,
-      keyDownHandler: hotKeyBinding.keyDownHandler,
-      keyUpHandler: hotKeyBinding.keyUpHandler,
-    );
+    if (!_isPaused) {
+      await hotKeyManager.register(
+        hotKey,
+        keyDownHandler: hotKeyBinding.keyDownHandler,
+        keyUpHandler: hotKeyBinding.keyUpHandler,
+      );
+    }
+    hotKeyToBindings[hotKey] = hotKeyBinding;
   }
 
   /// Unregister a hotkey
   Future<void> unregister(HotKey hotkey) async {
-    if (!allHotKeys.contains(hotkey)) return;
+    if (hotKeyToBindings[hotkey] == null) return;
 
-    await hotKeyManager.unregister(hotkey);
+    if (!_isPaused) {
+      await hotKeyManager.unregister(hotkey);
+    }
+    hotKeyToBindings.remove(hotkey);
   }
 
   /// Register hot keys from a list.
   Future<void> registerAll(List<HotKeyBinding> hotKeyBindingList) async {
-    for (final hotKeyBinding in hotKeyBindingList) {
-      await hotKeyManager.register(
-        hotKeyBinding.hotKey,
-        keyDownHandler: hotKeyBinding.keyDownHandler,
-        keyUpHandler: hotKeyBinding.keyUpHandler,
-      );
+    if (_isPaused) {
+      for (final hotKeyBinding in hotKeyBindingList) {
+        hotKeyToBindings[hotKeyBinding.hotKey] = hotKeyBinding;
+      }
+    } else {
+      for (final hotKeyBinding in hotKeyBindingList) {
+        final hotKey = hotKeyBinding.hotKey;
+        if (hotKeyToBindings[hotKey] != null) {
+          await hotKeyManager.unregister(hotKey);
+          hotKeyToBindings.remove(hotKey);
+        }
+
+        await hotKeyManager.register(
+          hotKey,
+          keyDownHandler: hotKeyBinding.keyDownHandler,
+          keyUpHandler: hotKeyBinding.keyUpHandler,
+        );
+        hotKeyToBindings[hotKey] = hotKeyBinding;
+      }
     }
   }
 
   /// Unregister all hot keys.
   /// Call this when recording shortcut, so shortcuts already registered won't be triggered.
-  /// This is alse for debugging purposes, need to be called to support hot reload.
+  /// This is also for debugging purposes, need to be called to support hot reload.
   ///
   /// Call in main function:
   ///
@@ -52,6 +78,29 @@ class AppHotKeys {
   /// ```
   Future<void> unregisterAll() async {
     await hotKeyManager.unregisterAll();
+    hotKeyToBindings.clear();
+  }
+
+  /// Pauses all hotkeys.
+  Future<void> pause() async {
+    if (_isPaused) return;
+
+    _isPaused = true;
+    await hotKeyManager.unregisterAll();
+  }
+
+  /// Resumes all hotkeys from pause.
+  Future<void> resume() async {
+    if (!_isPaused) return;
+
+    for (final hotKeyBinding in hotKeyToBindings.values) {
+      await hotKeyManager.register(
+        hotKeyBinding.hotKey,
+        keyDownHandler: hotKeyBinding.keyDownHandler,
+        keyUpHandler: hotKeyBinding.keyUpHandler,
+      );
+    }
+    _isPaused = false;
   }
 }
 
