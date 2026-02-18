@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 
+import '../../../../core/hotkeys/hotkeys.dart';
 import '../../../../core/theme/theme.dart';
 import '../../../../core/widgets/color_picker/color_picker.dart';
 import '../../../../core/widgets/shortcut_recorder.dart';
@@ -195,7 +196,9 @@ class _UserPreferencesBodyState extends ConsumerState<UserPreferencesBody> {
           subtitle: Text(item.description, style: appTextStyles.body),
           trailing: ShortcutRecorder(
             hotkeyDisplayed: value,
-            onChanged: userPrefsCtrl.updateShortcut,
+            onValidRecord: userPrefsCtrl.updateShortcut,
+            onEnter: appHotKeys.pause,
+            onExit: appHotKeys.resume,
           ).mouseRegion(),
         ),
       ),

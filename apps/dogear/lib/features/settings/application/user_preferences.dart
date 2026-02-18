@@ -44,19 +44,19 @@ class UserPreferences extends _$UserPreferences {
   }
 
   /// Updates shortcut.
-  void updateShortcut(HotKey? hotkey) {
+  Future<void> updateShortcut(HotKey? hotkey) async {
     final prevPrefs = state;
     if (prevPrefs.shortcut == hotkey) return;
 
-    _applyShortcut(hotkey);
+    await _applyShortcut(hotkey);
     _saveUserPrefs(prevPrefs.copyWith(shortcut: hotkey));
   }
 
-  void _applyShortcut(HotKey? newKey) {
+  Future<void> _applyShortcut(HotKey? newKey) async {
     final prevKey = state.shortcut;
 
     if (prevKey != null) {
-      appHotKeys.unregister(prevKey);
+      await appHotKeys.unregister(prevKey);
     }
 
     if (newKey == null) return;
@@ -68,7 +68,7 @@ class UserPreferences extends _$UserPreferences {
         orchestrator.autoAddRemoveUnderCursorWindow();
       },
     );
-    appHotKeys.register(newHotkeyBinding);
+    await appHotKeys.register(newHotkeyBinding);
   }
 
   /// Updates dog ear color.
@@ -80,17 +80,17 @@ class UserPreferences extends _$UserPreferences {
     _saveUserPrefs(prevPrefs.copyWith(dogEarColorArgb: newColorARGB));
   }
 
-  void _applyDogEarColor(int newColorARGB) {
-    final orchestrator = ref.read(topmostOverlayOrchestratorProvider.notifier);
-    orchestrator.updateOverlayColor(Color(newColorARGB));
-  }
-
   /// Reapplies dog ear color.
   ///
   /// Used after color picking dialog is closed without confirmation.
   void reapplyDogEarColor() {
     final prevPrefs = state;
     _applyDogEarColor(prevPrefs.dogEarColorArgb);
+  }
+
+  void _applyDogEarColor(int newColorARGB) {
+    final orchestrator = ref.read(topmostOverlayOrchestratorProvider.notifier);
+    orchestrator.updateOverlayColor(Color(newColorARGB));
   }
 
   /// Updates should app be closed to tray when clicking

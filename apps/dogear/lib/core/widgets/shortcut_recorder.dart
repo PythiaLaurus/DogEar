@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,12 +8,24 @@ import 'package:hotkey_manager/hotkey_manager.dart';
 import '../theme/theme.dart';
 
 class ShortcutRecorder extends ConsumerStatefulWidget {
+  /// Hotkey to display when not recording.
   final HotKey? hotkeyDisplayed;
-  final ValueChanged<HotKey?> onChanged;
+
+  /// Callback when valid hotkey is recorded.
+  final FutureOr<void> Function(HotKey? hotKey) onValidRecord;
+
+  /// Callback when entering recording mode.
+  final FutureOr<void> Function()? onEnter;
+
+  /// Callback when exiting recording mode.
+  final FutureOr<void> Function()? onExit;
+
   const ShortcutRecorder({
     super.key,
     this.hotkeyDisplayed,
-    required this.onChanged,
+    required this.onValidRecord,
+    this.onEnter,
+    this.onExit,
   });
 
   @override
@@ -60,6 +74,13 @@ class _ShortcutRecorderState extends ConsumerState<ShortcutRecorder> {
       return;
     }
 
+    final key = event.logicalKey;
+    if (key == LogicalKeyboardKey.escape) {
+      await widget.onExit?.call();
+      _focusNode.unfocus();
+      return;
+    }
+
     List<HotKeyModifier> modifiers = [];
     if (HardwareKeyboard.instance.isControlPressed) {
       modifiers.add(HotKeyModifier.control);
@@ -74,19 +95,18 @@ class _ShortcutRecorderState extends ConsumerState<ShortcutRecorder> {
       modifiers.add(HotKeyModifier.meta);
     }
 
-    // Ignore modifier-only presses
-    final key = event.logicalKey;
-
     setState(() {
       _editingHotKey = HotKey(key: key, modifiers: modifiers);
     });
 
+    // Ignore modifier-only presses
     if (_isModifier(key)) return;
 
     // Handle delete
     if (key == LogicalKeyboardKey.backspace ||
         key == LogicalKeyboardKey.delete) {
-      widget.onChanged(null);
+      await widget.onValidRecord(null);
+      await widget.onExit?.call();
       _focusNode.unfocus();
       return;
     }
@@ -98,8 +118,8 @@ class _ShortcutRecorderState extends ConsumerState<ShortcutRecorder> {
       scope: HotKeyScope.system,
     );
 
-    widget.onChanged(newKey);
-
+    await widget.onValidRecord(newKey);
+    await widget.onExit?.call();
     _focusNode.unfocus();
   }
 
@@ -112,10 +132,16 @@ class _ShortcutRecorderState extends ConsumerState<ShortcutRecorder> {
       focusNode: _focusNode,
       onKeyEvent: _isRecording ? _handleKeyboardEvent : null,
       child: TapRegion(
-        onTapInside: (_) {
+        onTapInside: (_) async {
+          if (_isRecording) return;
+
+          await widget.onEnter?.call();
           _focusNode.requestFocus();
         },
-        onTapOutside: (event) {
+        onTapOutside: (event) async {
+          if (!_isRecording) return;
+
+          await widget.onExit?.call();
           _focusNode.unfocus();
         },
         child: Container(
