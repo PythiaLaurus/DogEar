@@ -32,8 +32,8 @@ class PlatformBrightness extends _$PlatformBrightness
   }
 
   /// Make [PlatformBrightness] follow system.
-  /// Use [setPlatformBrightness] with argument [Brightness.light] or [Brightness.dark]
-  /// to make [PlatformBrightness] not follow system.
+  ///
+  /// Use [setPlatformBrightness] with argument [Brightness.light] or [Brightness.dark] to make [PlatformBrightness] not follow system.
   void toFollowSystem() {
     if (_isFollowSystem) return;
     _isFollowSystem = true;
@@ -79,15 +79,18 @@ class PlatformBrightness extends _$PlatformBrightness
         : _updatePlatformBrightness(Brightness.light);
   }
 
-  /// To follow system brightness once.
-  /// This will not save the theme mode in storage.
+  /// To follow system brightness for once.
+  ///
+  /// Used in [didChangePlatformBrightness] to execute the [state] change.
+  ///
+  /// Note: This will not save the theme mode to local storage.
   void _followSystemForOnce() {
     final sysBrightness =
         WidgetsBinding.instance.platformDispatcher.platformBrightness;
-
     state = sysBrightness;
   }
 
+  /// Asynchronous initialize.
   Future<void> _init() async {
     final defaultThemeMode = await appStorage.getString(_kThemeMode);
     if (defaultThemeMode == null) return;
@@ -117,11 +120,13 @@ class PlatformBrightness extends _$PlatformBrightness
     });
   }
 
+  /// Internal method to update the platform brightness.
+  ///
+  /// Updates [state] and saves it to local storage.
+  ///
+  /// Note: This method doesn't check if the brightness is the same as the current one.
   void _updatePlatformBrightness(Brightness brightness) {
-    if (brightness == state) return;
-
     state = brightness;
     appStorage.setString(_kThemeMode, brightness.name);
   }
 }
-
