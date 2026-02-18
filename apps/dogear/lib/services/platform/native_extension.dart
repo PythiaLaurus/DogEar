@@ -39,21 +39,49 @@ extension type const NativeError._(
 
   static const none = NativeError(function: "None", code: 0, message: "");
 
-  bool get isNone => this == none;
-  bool get isNotNone => this != none;
-
   const NativeError({
     required String function,
     required int code,
     required String message,
   }) : this._((function: function, code: code, message: message));
+}
+
+/// A [NativeError] logger mixin.
+/// Provides last error.
+mixin NativaErrorLogger {
+  /// Name of the module using mixin [NativaErrorLogger].
+  ///
+  /// Must be override.
+  String get moduleName;
+
+  // Default error
+  NativeError _rawLastError = .none;
+
+  /// Last error.
+  /// Always be [NativeError.none] in production environment.
+  NativeError get lastError =>
+      formatted(_rawLastError, prefix: "[$moduleName] ");
+
+  /// Debug record.
+  /// Only works in debug environment.
+  @protected
+  void log(String function) {
+    assert(() {
+      _rawLastError = NativeError(
+        function: function,
+        code: GetLastError(),
+        message: "",
+      );
+      return true;
+    }());
+  }
 
   /// Format [NativeError] with an optional prefix for returned [NativeError.function] if the passed in [error.code] is not 0.
   ///
   /// e.g. with [prefix] passed in as "[module A] ", the [NativeError.function] returned will be "[module A] function".
-  factory NativeError.formatted(NativeError error, {String prefix = ""}) {
+  static NativeError formatted(NativeError error, {String prefix = ""}) {
     var NativeError(:function, :code, :message) = error;
-    if (code == 0) return none;
+    if (code == 0) return .none;
 
     final buffer = calloc<Pointer<Utf16>>();
     const flags =
@@ -86,43 +114,6 @@ extension type const NativeError._(
       code: code,
       message: message,
     );
-  }
-
-  /// Returns a [NativeError] with code as [GetLastError] and message empty.
-  factory NativeError.logRaw(String function) {
-    final errorCode = GetLastError();
-    return errorCode != 0
-        ? NativeError(function: function, code: errorCode, message: "")
-        : none;
-  }
-}
-
-/// A [NativeError] logger mixin.
-/// Provides last error.
-mixin NativaErrorLogger {
-  /// Name of the module using mixin [NativaErrorLogger].
-  ///
-  /// Must be override.
-  String get moduleName;
-
-  // Default error
-  NativeError _rawLastError = .none;
-
-  /// Last error.
-  /// Always be [NativeError.none] in production environment.
-  NativeError get lastError =>
-      .formatted(_rawLastError, prefix: "[$moduleName] ");
-
-  /// Debug record.
-  /// Only works in debug environment.
-  @protected
-  void log(String function) {
-    assert(() {
-      if (NativeError.logRaw(function) case final err when err.isNotNone) {
-        _rawLastError = err;
-      }
-      return true;
-    }());
   }
 }
 
