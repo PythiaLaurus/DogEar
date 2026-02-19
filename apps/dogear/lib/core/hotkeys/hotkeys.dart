@@ -15,7 +15,10 @@ class AppHotKeys {
   /// All hot keys registered will be saved here.
   final hotKeyToBindings = <HotKey, HotKeyBinding>{};
 
-  /// Register a hotkey
+  /// Register a hotkey.
+  ///
+  /// Note: When [isPaused] is true, the hotkey will not be registered
+  /// immediately until [resume] is called.
   Future<void> register(HotKeyBinding hotKeyBinding) async {
     final hotKey = hotKeyBinding.hotKey;
     if (hotKeyToBindings[hotKey] != null) {
@@ -33,7 +36,11 @@ class AppHotKeys {
     hotKeyToBindings[hotKey] = hotKeyBinding;
   }
 
-  /// Unregister a hotkey
+  /// Unregister a hotkey.
+  ///
+  /// Note: When [isPaused] is true, the hotkey will not be unregistered again,
+  /// since it is already unregistered when [pause] is called. Instead, it will
+  /// simply not be registered again when [resume] is called.
   Future<void> unregister(HotKey hotkey) async {
     if (hotKeyToBindings[hotkey] == null) return;
 
@@ -44,6 +51,9 @@ class AppHotKeys {
   }
 
   /// Register hot keys from a list.
+  ///
+  /// Note: When [isPaused] is true, the hotkeys will not be registered
+  /// immediately until [resume] is called.
   Future<void> registerAll(List<HotKeyBinding> hotKeyBindingList) async {
     if (_isPaused) {
       for (final hotKeyBinding in hotKeyBindingList) {
@@ -76,12 +86,20 @@ class AppHotKeys {
   /// ```dart
   /// await AppHotKeys.unregisterAll();
   /// ```
+  ///
+  /// Note: When [isPaused] is true, the hotkeys will not be unregistered again,
+  /// since they are already unregistered when [pause] is called. Instead, they will
+  /// simply not be registered again when [resume] is called.
   Future<void> unregisterAll() async {
     await hotKeyManager.unregisterAll();
     hotKeyToBindings.clear();
   }
 
   /// Pauses all hotkeys.
+  ///
+  /// This will unregister all hotkeys and prevent them from being triggered.
+  /// If any hotkey is registered during paused, it will not be registered
+  /// immediately until [resume] is called.
   Future<void> pause() async {
     if (_isPaused) return;
 
