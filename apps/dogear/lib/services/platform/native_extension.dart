@@ -2,6 +2,7 @@
 
 // Functions, types and constants that are not part of the implemented Dart Win32 API.
 
+import 'dart:collection' show ListQueue;
 import 'dart:ffi';
 import 'package:ffi/ffi.dart';
 import 'package:flutter/foundation.dart' show protected;
@@ -30,20 +31,14 @@ final class TOKEN_ELEVATION extends Struct {
 }
 
 /// Native error type.
-extension type const NativeError._(
-  ({String function, int code, String message}) _
-) {
+extension type const NativeError._(({String function, int code}) _) {
   String get function => _.function;
   int get code => _.code;
-  String get message => _.message;
 
-  static const none = NativeError(function: "None", code: 0, message: "");
+  static const none = NativeError(function: "None", code: 0);
 
-  const NativeError({
-    required String function,
-    required int code,
-    required String message,
-  }) : this._((function: function, code: code, message: message));
+  const NativeError({required String function, required int code})
+    : this._((function: function, code: code));
 }
 
 /// A [NativeError] logger mixin.
@@ -54,24 +49,47 @@ mixin NativaErrorLogger {
   /// Must be override.
   String get moduleName;
 
-  // Default error
-  NativeError _rawLastError = .none;
+  String get _prefix => "[$moduleName] ";
 
-  /// Last error.
-  /// Always be [NativeError.none] in production environment.
-  NativeError get lastError =>
-      formatted(_rawLastError, prefix: "[$moduleName] ");
+  /// Max error log count.
+  ///
+  /// Default is 10. Can be override.
+  int get maxErrorLogCount => 10;
 
-  /// Debug record.
-  /// Only works in debug environment.
+  final ListQueue<NativeError> _errorLogs = ListQueue();
+
+  /// Last error log string.
+  ///
+  /// Note: This is always a [NativeError.none] message in production environment.
+  String get lastError =>
+      _formatted(_errorLogs.lastOrNull ?? NativeError.none, prefix: _prefix);
+
+  /// All error logs string.
+  ///
+  /// Contains last [maxErrorLogCount] lines of logs.
+  ///
+  /// Note: This will clear the log queue.
+  ///
+  /// Note: This is always empty in production environment.
+  String get allErrors {
+    final buffer = StringBuffer();
+    for (final error in _errorLogs) {
+      buffer.writeln(_formatted(error, prefix: _prefix));
+    }
+    _errorLogs.clear();
+    return buffer.toString();
+  }
+
+  /// Records a native error log.
+  ///
+  /// Note: This only works in debug environment.
   @protected
   void log(String function) {
     assert(() {
-      _rawLastError = NativeError(
-        function: function,
-        code: GetLastError(),
-        message: "",
-      );
+      if (_errorLogs.length >= maxErrorLogCount) {
+        _errorLogs.removeFirst();
+      }
+      _errorLogs.addLast(NativeError(function: function, code: GetLastError()));
       return true;
     }());
   }
@@ -79,9 +97,16 @@ mixin NativaErrorLogger {
   /// Format [NativeError] with an optional prefix for returned [NativeError.function] if the passed in [error.code] is not 0.
   ///
   /// e.g. with [prefix] passed in as "[module A] ", the [NativeError.function] returned will be "[module A] function".
-  static NativeError formatted(NativeError error, {String prefix = ""}) {
-    var NativeError(:function, :code, :message) = error;
-    if (code == 0) return .none;
+  static String _formatted(NativeError error, {String prefix = ""}) {
+    final resultBuffer = StringBuffer();
+
+    var NativeError(:function, :code) = error;
+    resultBuffer.write("$prefix$function: $code | ");
+
+    if (code == 0) {
+      resultBuffer.write("No error");
+      return resultBuffer.toString();
+    }
 
     final buffer = calloc<Pointer<Utf16>>();
     const flags =
@@ -101,19 +126,17 @@ mixin NativaErrorLogger {
 
     if (length == 0) {
       free(buffer);
-      return NativeError(function: "$prefix$function", code: code, message: "");
+      resultBuffer.write("Unknown error");
+      return resultBuffer.toString();
     }
 
     final messagePtr = buffer.value;
-    message = messagePtr.toDartString().trim();
+    final message = messagePtr.toDartString().trim();
     LocalFree(messagePtr);
     free(buffer);
 
-    return NativeError(
-      function: "$prefix$function",
-      code: code,
-      message: message,
-    );
+    resultBuffer.write(message);
+    return resultBuffer.toString();
   }
 }
 
