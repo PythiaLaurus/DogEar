@@ -20,29 +20,6 @@ class UserPreferencesBody extends ConsumerStatefulWidget {
 }
 
 class _UserPreferencesBodyState extends ConsumerState<UserPreferencesBody> {
-  static const List<SettingsCategory> _userPrefsCategories = [
-    SettingsCategory(
-      icon: Icons.keyboard,
-      title: "Shortcut",
-      items: [SettingsItem.shortcut],
-    ),
-    SettingsCategory(
-      icon: Icons.palette,
-      title: "Appearance",
-      items: [SettingsItem.dogEarColor, SettingsItem.themeMode],
-    ),
-    SettingsCategory(
-      icon: Icons.settings,
-      title: "System",
-      items: [
-        SettingsItem.closeToTray,
-        SettingsItem.showTrayIcon,
-        SettingsItem.autostart,
-        SettingsItem.resetUserPrefs,
-      ],
-    ),
-  ];
-
   void _pickColor() async {
     final appColors = ref.watch(appColorsProvider);
     final appTextStyles = ref.watch(appTextStylesProvider);
@@ -169,7 +146,7 @@ class _UserPreferencesBodyState extends ConsumerState<UserPreferencesBody> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: _userPrefsCategories.map((cata) {
+      children: SettingsCategory.values.map((cata) {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

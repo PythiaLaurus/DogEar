@@ -1,16 +1,28 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show IconData, Icons;
 import 'package:hotkey_manager/hotkey_manager.dart' show HotKey;
 
-class SettingsCategory {
+enum SettingsCategory {
+  shortcut(icon: Icons.keyboard, items: [SettingsItem.shortcut]),
+  appearance(
+    icon: Icons.palette,
+    items: [SettingsItem.dogEarColor, SettingsItem.themeMode],
+  ),
+  system(
+    icon: Icons.settings,
+    items: [
+      SettingsItem.closeToTray,
+      SettingsItem.showTrayIcon,
+      SettingsItem.autostart,
+      SettingsItem.resetUserPrefs,
+    ],
+  );
+
   final IconData icon;
-  final String title;
   final List<SettingsItem> items;
 
-  const SettingsCategory({
-    required this.icon,
-    required this.title,
-    required this.items,
-  });
+  String get title => name[0].toUpperCase() + name.substring(1);
+
+  const SettingsCategory({required this.icon, required this.items});
 }
 
 enum SettingsItem<T> {
