@@ -16,7 +16,7 @@ class WindowState extends _$WindowState
     implements Finalizable {
   // Internal window state cache
   bool _isDocked = false;
-  int? _hwnd;
+  HWND _hwnd = GetActiveWindow();
 
   // Native Resources
   late final Pointer<RECT> _rectPtr;
@@ -35,15 +35,15 @@ class WindowState extends _$WindowState
   }
 
   bool isDocked() {
-    if (_hwnd == null || _hwnd == 0) {
+    if (_hwnd.isNull) {
       _hwnd = GetActiveWindow();
     }
-    final hwnd = _hwnd!;
+    final hwnd = _hwnd;
 
-    if (GetWindowRect(hwnd, _rectPtr) == 0) return false;
+    if (!GetWindowRect(hwnd, _rectPtr).value) return false;
 
     final monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
-    if (GetMonitorInfo(monitor, _monitorInfoPtr) == 0) return false;
+    if (!GetMonitorInfo(monitor, _monitorInfoPtr)) return false;
 
     final r = _rectPtr.ref;
     final m = _monitorInfoPtr.ref.rcWork;

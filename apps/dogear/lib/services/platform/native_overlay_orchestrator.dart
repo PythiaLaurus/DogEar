@@ -8,9 +8,12 @@ import 'package:win32/win32.dart';
 import 'native_window_bridge.dart';
 import 'native_extension.dart';
 
-class NativeOverlayOrchestrator {
+class NativeOverlayOrchestrator with NativaErrorLogger {
   NativeOverlayOrchestrator._();
   static final instance = NativeOverlayOrchestrator._();
+
+  @override
+  String get moduleName => "NativeOverlayOrchestrator";
 
   // Configurations
   // Class name
@@ -30,28 +33,33 @@ class NativeOverlayOrchestrator {
   bool get isInitialized => _isClassRegistered;
 
   // States
-  final Map<int, int> _targetToOverlay = {};
-  final Map<int, int> _overlayToTarget = {};
+  final Map<HWND, HWND> _targetToOverlay = {};
+  final Map<HWND, HWND> _overlayToTarget = {};
   bool _isClassRegistered = false;
   int _hookHandle = 0;
   NativeCallable<WinEventProc>? _hookCallback;
-  int _brushHandle = 0;
+  HBRUSH _brushHandle = HBRUSH(nullptr);
   int _brushAlpha = 255;
 
   /// This will be called after a target window is destroyed (closed).
   ///
   /// [targetHwnd] is already destroyed when this function is called,
   /// so it can't be used to implement any native logic.
-  void Function(int targetHwnd)? onWindowDestroyed;
+  void Function(HWND targetHwnd)? onWindowDestroyed;
 
-  int? getOverlayHwnd(int targetHwnd) => _targetToOverlay[targetHwnd];
-  int? getTargetHwnd(int overlayHwnd) => _overlayToTarget[overlayHwnd];
+  HWND getOverlayHwnd(HWND targetHwnd) =>
+      _targetToOverlay[targetHwnd] ?? HWND_NULL;
+  HWND getTargetHwnd(HWND overlayHwnd) =>
+      _overlayToTarget[overlayHwnd] ?? HWND_NULL;
 
   /// Adds a new target window to be tracked.
   ///
   /// Returns the overlay window handle if successful, or null if failed.
-  int? addTarget(int targetHwnd) {
-    if (_shouldIgnoreWindow(targetHwnd)) return null;
+  HWND addTarget(HWND targetHwnd) {
+    if (_shouldIgnoreWindow(targetHwnd)) {
+      log("addTarget", NativeError.getSuccessWin32Result(HWND_NULL));
+      return HWND_NULL;
+    }
 
     if (!_isClassRegistered) {
       init();
@@ -82,17 +90,20 @@ class NativeOverlayOrchestrator {
       0,
       20,
       20,
-      0,
-      0,
-      hInst,
+      HWND_NULL,
+      HMENU(nullptr),
+      HINSTANCE(hInst),
       nullptr,
     );
-    if (overlayHwnd == 0) return null;
+    if (overlayHwnd.isNull) {
+      log("addTarget", NativeError.getSuccessWin32Result(HWND_NULL));
+      return HWND_NULL;
+    }
 
     // Set the window's opacity to [_brushAlpha] but ignoring the color parameter.
     nativeWindowBridge.setLayeredWindowAttributes(
       overlayHwnd,
-      0,
+      COLORREF(0),
       _brushAlpha,
       LWA_ALPHA,
     );
@@ -100,11 +111,11 @@ class NativeOverlayOrchestrator {
     // If this is the first tracked window, set the class-wide background brush.
     // GCLP_HBRBACKGROUND (-10) replaces the background brush associated with the class.
     // This ensures all subsequent overlay windows inherit the same background color.
-    if (isTargetsEmpty && _brushHandle != 0) {
+    if (isTargetsEmpty && _brushHandle.isNotNull) {
       nativeWindowBridge.setClassLongPtr(
         overlayHwnd,
         GCLP_HBRBACKGROUND,
-        _brushHandle,
+        _brushHandle.address,
       );
     }
 
@@ -128,33 +139,50 @@ class NativeOverlayOrchestrator {
     // Bring target to foreground
     nativeWindowBridge.setForegroundWindow(targetHwnd);
 
+    log("addTarget", NativeError.getSuccessWin32Result(overlayHwnd));
     return overlayHwnd;
   }
 
   /// Ignore windows that are already tracked, created by ourself, and [ToolWindow].
-  bool _shouldIgnoreWindow(int hwnd) {
+  bool _shouldIgnoreWindow(HWND hwnd) {
     if (_targetToOverlay.containsKey(hwnd) ||
         _overlayToTarget.containsKey(hwnd)) {
+      log("_shouldIgnoreWindow", NativeError.getSuccessWin32Result(true));
       return true;
     }
     final className = nativeWindowBridge.getClassName(hwnd);
-    if (className == null) return true;
-    if (className.startsWith(_kClassNamePrefix)) {
+    if (className?.startsWith(_kClassNamePrefix) ?? true) {
+      log("_shouldIgnoreWindow", NativeError.getSuccessWin32Result(true));
       return true;
     }
 
-    int style = GetWindowLongPtr(hwnd, GWL_EXSTYLE);
-    if ((style & WS_EX_TOOLWINDOW) != 0) return true;
+    final styleResult = GetWindowLongPtr(hwnd, GWL_EXSTYLE);
+    if ((styleResult.value & WS_EX_TOOLWINDOW) != 0) {
+      log(
+        "_shouldIgnoreWindow",
+        Win32Result(value: true, error: styleResult.error),
+      );
+      return true;
+    }
 
-    if (!nativeWindowBridge.isWindowVisible(hwnd)) return true;
+    if (!nativeWindowBridge.isWindowVisible(hwnd)) {
+      log("_shouldIgnoreWindow", NativeError.getSuccessWin32Result(true));
+      return true;
+    }
 
+    log("_shouldIgnoreWindow", NativeError.getSuccessWin32Result(false));
     return false;
   }
 
   /// Removes a tracked target window.
-  void removeTarget(int targetHwnd) {
+  ///
+  /// Returns true if the target was removed, false otherwise.
+  bool removeTarget(HWND targetHwnd) {
     final overlayHwnd = _targetToOverlay.remove(targetHwnd);
-    if (overlayHwnd == null) return;
+    if (overlayHwnd == null) {
+      log("removeTarget", NativeError.getSuccessWin32Result(false));
+      return false;
+    }
 
     _overlayToTarget.remove(overlayHwnd);
     nativeWindowBridge.destroyWindow(overlayHwnd);
@@ -162,6 +190,9 @@ class NativeOverlayOrchestrator {
     if (_targetToOverlay.isEmpty) {
       _stopHook();
     }
+
+    log("removeTarget", NativeError.getSuccessWin32Result(true));
+    return true;
   }
 
   /// Updates overlay shape.
@@ -180,17 +211,26 @@ class NativeOverlayOrchestrator {
     final colorRef = r | (g << 8) | (b << 16);
 
     // Create new brush first
-    final newBrush = CreateSolidBrush(colorRef);
+    final newBrush = CreateSolidBrush(COLORREF(colorRef));
 
     // Set new brush to class
     if (_targetToOverlay.isNotEmpty) {
       final hwnd = _targetToOverlay.values.first;
       // GCLP_HBRBACKGROUND is -10
-      nativeWindowBridge.setClassLongPtr(hwnd, GCLP_HBRBACKGROUND, newBrush);
+      nativeWindowBridge.setClassLongPtr(
+        hwnd,
+        GCLP_HBRBACKGROUND,
+        newBrush.address,
+      );
 
       if (_brushAlpha != a) {
         for (final h in _targetToOverlay.values) {
-          nativeWindowBridge.setLayeredWindowAttributes(h, 0, a, LWA_ALPHA);
+          nativeWindowBridge.setLayeredWindowAttributes(
+            h,
+            COLORREF(0),
+            a,
+            LWA_ALPHA,
+          );
         }
       }
 
@@ -201,22 +241,27 @@ class NativeOverlayOrchestrator {
     }
 
     // Delete old brush
-    if (_brushHandle != 0) {
-      DeleteObject(_brushHandle);
-    }
+    if (_brushHandle.isNotNull) _brushHandle.close();
 
     _brushHandle = newBrush;
     _brushAlpha = a;
+
+    log("updateOverlayColor", NativeError.noneResult);
   }
 
   /// Register Window Class.
   /// Must be called to be able to create overlay windows.
   ///
+  /// Returns true if successful, false otherwise.
+  ///
   /// Can be called in the first, or it will be called automatically in
   /// [addTarget]. It will only be called once. If it is called manually,
   /// it will not be called in [addTarget] again.
-  void init() {
-    if (_isClassRegistered) return;
+  bool init() {
+    if (_isClassRegistered) {
+      log("init", NativeError.getSuccessWin32Result(false));
+      return false;
+    }
 
     final classNamePtr = kClassName.toNativeUtf16();
     final hInst = nativeWindowBridge.getModuleHandle(null);
@@ -228,14 +273,13 @@ class NativeOverlayOrchestrator {
       wndClass.ref.lpfnWndProc = DefWindowProcWPtr;
       wndClass.ref.cbClsExtra = 0;
       wndClass.ref.cbWndExtra = 0;
-      wndClass.ref.hInstance = hInst;
-      wndClass.ref.hIcon = 0;
-      wndClass.ref.hCursor = LoadCursor(0, IDC_ARROW);
-      // By set [hbrBackground] to 0, erasing step is invisible to the user
-      // when calling [invalidateRect]
-      wndClass.ref.hbrBackground = 0;
-      wndClass.ref.lpszMenuName = nullptr;
-      wndClass.ref.lpszClassName = classNamePtr;
+      wndClass.ref.hInstance = HINSTANCE(hInst);
+      wndClass.ref.hIcon = HICON(nullptr);
+      wndClass.ref.hCursor = LoadCursor(null, IDC_ARROW).value;
+      // By set [hbrBackground] to 0, erasing step is invisible to the user when calling [invalidateRect]
+      wndClass.ref.hbrBackground = HBRUSH(nullptr);
+      wndClass.ref.lpszMenuName = PWSTR(nullptr);
+      wndClass.ref.lpszClassName = PWSTR(classNamePtr);
 
       if (nativeWindowBridge.registerClass(wndClass.ref) != 0) {
         _isClassRegistered = true;
@@ -244,6 +288,9 @@ class NativeOverlayOrchestrator {
       free(wndClass);
       free(classNamePtr);
     }
+
+    log("init", NativeError.getSuccessWin32Result(true));
+    return true;
   }
 
   /// Disposes resources.
@@ -258,46 +305,59 @@ class NativeOverlayOrchestrator {
     _targetToOverlay.clear();
     _overlayToTarget.clear();
 
-    if (_brushHandle != 0) {
-      DeleteObject(_brushHandle);
-      _brushHandle = 0;
+    if (_brushHandle.isNotNull) {
+      _brushHandle.close();
+      _brushHandle = HBRUSH(nullptr);
     }
 
     if (_isClassRegistered) {
-      nativeWindowBridge.unregisterClass(kClassName, 0);
+      nativeWindowBridge.unregisterClass(kClassName, HINSTANCE(nullptr));
       _isClassRegistered = false;
     }
   }
 
-  void _startHook() {
-    if (_hookHandle != 0) return;
+  /// Starts hooking the native Windows message loop.
+  ///
+  /// Returns true if the hook was successfully started, false otherwise.
+  bool _startHook() {
+    if (_hookHandle != 0) {
+      log("_startHook", NativeError.getSuccessWin32Result(false));
+      return false;
+    }
 
     _hookCallback ??= NativeCallable<WinEventProc>.listener(
       _staticHookCallback,
     );
     final funcPtr = _hookCallback!.nativeFunction;
 
-    if (_hookHandle == 0) {
-      _hookHandle = nativeWindowBridge.setWinEventHook(
-        EVENT_OBJECT_DESTROY,
-        EVENT_OBJECT_LOCATIONCHANGE,
-        0,
-        funcPtr,
-        0,
-        0,
-        WINEVENT_OUTOFCONTEXT,
-      );
-    }
+    _hookHandle = nativeWindowBridge.setWinEventHook(
+      EVENT_OBJECT_DESTROY,
+      EVENT_OBJECT_LOCATIONCHANGE,
+      0,
+      funcPtr,
+      0,
+      0,
+      WINEVENT_OUTOFCONTEXT,
+    );
+
+    log("_startHook", NativeError.getSuccessWin32Result(true));
+    return true;
   }
 
-  void _stopHook() {
-    if (_hookHandle == 0) return;
+  bool _stopHook() {
+    if (_hookHandle == 0) {
+      log("_stopHook", NativeError.getSuccessWin32Result(false));
+      return false;
+    }
 
     nativeWindowBridge.unhookWinEvent(_hookHandle);
     _hookHandle = 0;
 
     _hookCallback?.close();
     _hookCallback = null;
+
+    log("_stopHook", NativeError.getSuccessWin32Result(true));
+    return true;
   }
 
   /// This callback must be static because it is passed as a raw function pointer
@@ -319,10 +379,10 @@ class NativeOverlayOrchestrator {
     // OBJID_WINDOW (0) is the window itself (not a child like a button).
     if (idObject != OBJID_WINDOW) return;
 
-    instance._handleWindowEnvent(event, hwnd);
+    instance._handleWindowEnvent(event, HWND(Pointer.fromAddress(hwnd)));
   }
 
-  void _handleWindowEnvent(int event, int targetHwnd) {
+  void _handleWindowEnvent(int event, HWND targetHwnd) {
     final overlayHwnd = _targetToOverlay[targetHwnd];
     if (overlayHwnd == null) return;
 
@@ -354,7 +414,7 @@ class NativeOverlayOrchestrator {
     }
   }
 
-  void _updateOverlayPosition(int targetHwnd, int overlayHwnd) {
+  void _updateOverlayPosition(HWND targetHwnd, HWND overlayHwnd) {
     final rect = nativeWindowBridge.getWindowRect(targetHwnd);
     if (rect == null) return;
 

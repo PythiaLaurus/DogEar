@@ -4,7 +4,6 @@
 
 import 'dart:collection' show ListQueue;
 import 'dart:ffi';
-import 'package:ffi/ffi.dart';
 import 'package:flutter/foundation.dart' show protected;
 import 'package:win32/win32.dart';
 
@@ -24,21 +23,30 @@ typedef WinEventProc =
       Int32 dwmsEventTime,
     );
 
-/// TOKEN_ELEVATION.
-final class TOKEN_ELEVATION extends Struct {
-  @Uint32()
-  external int TokenIsElevated;
-}
-
 /// Native error type.
-extension type const NativeError._(({String function, int code}) _) {
+extension type const NativeError._(
+  ({String function, Win32Result win32Result}) _
+) {
   String get function => _.function;
-  int get code => _.code;
+  Win32Result get win32Result => _.win32Result;
 
-  static const none = NativeError(function: "None", code: 0);
+  static const noneError = NativeError(
+    function: "None",
+    win32Result: noneResult,
+  );
 
-  const NativeError({required String function, required int code})
-    : this._((function: function, code: code));
+  static const noneResult = Win32Result(value: "Nothing", error: ERROR_SUCCESS);
+
+  static Win32Result getExceptionWin32Result(WindowsException e) =>
+      Win32Result(value: "Exception", error: WIN32_ERROR(e.hr));
+
+  static Win32Result getSuccessWin32Result(Object value) =>
+      Win32Result(value: value, error: ERROR_SUCCESS);
+
+  const NativeError({
+    required String function,
+    required Win32Result win32Result,
+  }) : this._((function: function, win32Result: win32Result));
 }
 
 /// A [NativeError] logger mixin.
@@ -52,17 +60,15 @@ mixin NativaErrorLogger {
   String get _prefix => "[$moduleName] ";
 
   /// Max error log count.
-  ///
-  /// Default is 10. Can be override.
-  int get maxErrorLogCount => 10;
+  static int get maxErrorLogCount => 20;
 
-  final ListQueue<NativeError> _errorLogs = ListQueue();
+  static final ListQueue<NativeError> _errorLogs = ListQueue();
 
   /// Last error log string.
   ///
-  /// Note: This is always a [NativeError.none] message in production environment.
-  String get lastError =>
-      _formatted(_errorLogs.lastOrNull ?? NativeError.none, prefix: _prefix);
+  /// Note: This is always a [NativeError.noneError] message in production environment.
+  static String get lastError =>
+      _formatted(_errorLogs.lastOrNull ?? NativeError.noneError);
 
   /// All error logs string.
   ///
@@ -71,10 +77,10 @@ mixin NativaErrorLogger {
   /// Note: This will clear the log queue.
   ///
   /// Note: This is always empty in production environment.
-  String get allErrors {
+  static String get allErrors {
     final buffer = StringBuffer();
     for (final error in _errorLogs) {
-      buffer.writeln(_formatted(error, prefix: _prefix));
+      buffer.writeln(_formatted(error));
     }
     _errorLogs.clear();
     return buffer.toString();
@@ -84,61 +90,51 @@ mixin NativaErrorLogger {
   ///
   /// Note: This only works in debug environment.
   @protected
-  void log(String function) {
+  void log(String function, Win32Result result) {
     assert(() {
       if (_errorLogs.length >= maxErrorLogCount) {
         _errorLogs.removeFirst();
       }
-      _errorLogs.addLast(NativeError(function: function, code: GetLastError()));
+      _errorLogs.addLast(
+        NativeError(function: "$_prefix$function", win32Result: result),
+      );
       return true;
     }());
   }
 
-  /// Format [NativeError] with an optional prefix for returned [NativeError.function] if the passed in [error.code] is not 0.
-  ///
-  /// e.g. with [prefix] passed in as "[module A] ", the [NativeError.function] returned will be "[module A] function".
-  static String _formatted(NativeError error, {String prefix = ""}) {
-    final resultBuffer = StringBuffer();
+  /// Format [NativeError] as "[$moduleName] $function() returns $value | code: $error | $errorMessage".
+  static String _formatted(NativeError nativeError) {
+    final buffer = StringBuffer();
 
-    var NativeError(:function, :code) = error;
-    resultBuffer.write("$prefix$function: $code | ");
+    final NativeError(:function, win32Result: Win32Result(:value, :error)) =
+        nativeError;
 
-    if (code == 0) {
-      resultBuffer.write("No error");
-      return resultBuffer.toString();
+    buffer.write("$function() returns $value | code: $error | ");
+
+    // No error
+    if (error.isOk) {
+      buffer.write("No error");
+      return buffer.toString();
     }
 
-    final buffer = calloc<Pointer<Utf16>>();
-    const flags =
-        FORMAT_MESSAGE_ALLOCATE_BUFFER |
-        FORMAT_MESSAGE_FROM_SYSTEM |
-        FORMAT_MESSAGE_IGNORE_INSERTS;
+    // Convert error code to HRESULT, and get error message
+    final errorMessage = error.toHRESULT().message;
 
-    final length = FormatMessage(
-      flags,
-      nullptr,
-      code,
-      0,
-      buffer.cast(),
-      0,
-      nullptr,
-    );
-
-    if (length == 0) {
-      free(buffer);
-      resultBuffer.write("Unknown error");
-      return resultBuffer.toString();
+    // Unknown error if no message
+    if (errorMessage.isEmpty) {
+      buffer.write("Unknown error");
+      return buffer.toString();
     }
 
-    final messagePtr = buffer.value;
-    final message = messagePtr.toDartString().trim();
-    LocalFree(messagePtr);
-    free(buffer);
+    // Error message
+    buffer.write(errorMessage);
 
-    resultBuffer.write(message);
-    return resultBuffer.toString();
+    return buffer.toString();
   }
 }
+
+/// Null HWND (0).
+final HWND_NULL = HWND(nullptr);
 
 /// The event ID for location change.
 const int EVENT_OBJECT_LOCATIONCHANGE = 0x800B;

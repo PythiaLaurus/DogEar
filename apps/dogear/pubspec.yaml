@@ -48,9 +48,9 @@ dependencies:
   freezed_annotation: ^3.1.0
   hotkey_manager: ^0.2.3
   flutter_single_instance: ^1.7.0
-  win32: ^5.15.0
+  win32: ^6.0.0
   ffi: ^2.2.0
-  json_annotation: ^4.10.0
+  json_annotation: ^4.11.0
 
 dev_dependencies:
   flutter_test:
@@ -65,7 +65,7 @@ dev_dependencies:
   riverpod_generator: ^4.0.3
   build_runner: ^2.11.1
   freezed: ^3.2.5
-  json_serializable: ^6.12.0
+  json_serializable: ^6.13.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

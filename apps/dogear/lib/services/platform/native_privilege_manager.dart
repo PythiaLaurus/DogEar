@@ -40,17 +40,17 @@ class NativePrivilegeManager with NativaErrorLogger {
       // lpDirectory: Working directory
       // nShowCmd: SW_SHOWNORMAL(1) to show the window normally
       final result = ShellExecute(
-        NULL,
-        pOperation,
-        pFile,
-        pParameters,
-        pDir,
+        null,
+        PCWSTR(pOperation),
+        PCWSTR(pFile),
+        PCWSTR(pParameters),
+        PCWSTR(pDir),
         SW_SHOWNORMAL,
       );
 
       // ShellExecute returns a value greater than 32 if successful.
       // If the return value is less than or equal to 32, it indicates an error.
-      if (result <= 32) {
+      if (result.address <= 32) {
         throw Exception(
           'Failed to relaunch with admin privileges. Error code: $result',
         );
@@ -63,7 +63,6 @@ class NativePrivilegeManager with NativaErrorLogger {
       free(pFile);
       free(pDir);
       free(pParameters);
-      log("requestAdminPrivileges");
     }
   }
 
@@ -71,37 +70,42 @@ class NativePrivilegeManager with NativaErrorLogger {
   bool _checkRunningAsAdmin() {
     // Get the current process handle
     final hProcess = GetCurrentProcess();
-    final phToken = calloc<HANDLE>();
+    final phToken = calloc<IntPtr>().cast<HANDLE>();
 
     try {
       // Open the access token associated with the current process
-      if (OpenProcessToken(hProcess, TOKEN_QUERY, phToken) == 0) {
+      if (!OpenProcessToken(hProcess, TOKEN_QUERY, phToken).value) {
+        log("isAppRunAsAdmin", NativeError.getSuccessWin32Result(false));
         return false;
       }
 
-      final hToken = phToken.value;
+      final hToken = phToken.value as HANDLE;
       final pElevation = calloc<TOKEN_ELEVATION>();
       final pReturnLength = calloc<DWORD>();
 
       try {
         final result = GetTokenInformation(
-          hToken,
+          HANDLE(hToken),
           TokenElevation,
           pElevation,
           sizeOf<TOKEN_ELEVATION>(),
           pReturnLength,
         );
-        if (result == 0) return false;
+        if (!result.value) {
+          log("isAppRunAsAdmin", NativeError.getSuccessWin32Result(false));
+          return false;
+        }
 
-        return pElevation.ref.TokenIsElevated != 0;
+        final value = pElevation.ref.TokenIsElevated != 0;
+        log("isAppRunAsAdmin", NativeError.getSuccessWin32Result(value));
+        return value;
       } finally {
-        CloseHandle(hToken);
+        hToken.close();
         free(pElevation);
         free(pReturnLength);
       }
     } finally {
       free(phToken);
-      log("isAppRunAsAdmin");
     }
   }
 }

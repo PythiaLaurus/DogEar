@@ -64,7 +64,7 @@ class UserPreferences extends _$UserPreferences {
     final orchestrator = ref.read(topmostOverlayOrchestratorProvider.notifier);
     final newHotkeyBinding = HotKeyBinding(
       hotKey: newKey,
-      keyDownHandler: (hotkey) {
+      keyDownHandler: (_) {
         orchestrator.autoAddRemoveUnderCursorWindow();
       },
     );

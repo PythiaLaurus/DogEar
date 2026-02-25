@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../services/platform/native_extension.dart';
 import '../../topmost_overlay_orchestration/application/topmost_overlay_orchestrator.dart';
 import 'widgets/user_preferences_body.dart';
 
@@ -17,6 +18,7 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
   @override
   Widget build(BuildContext context) {
     final appColors = ref.watch(appColorsProvider);
+    final aaa = ref.read(topmostOverlayOrchestratorProvider);
 
     return Scaffold(
       backgroundColor: appColors.background,
@@ -29,6 +31,14 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
             _statusCard(),
             const SizedBox(height: 24),
             UserPreferencesBody(),
+            TextButton(
+              onPressed: () {
+                print("--------");
+                print(aaa.topmostWindows.length);
+                print(NativaErrorLogger.allErrors);
+              },
+              child: Text("data"),
+            ),
           ],
         ),
       ),

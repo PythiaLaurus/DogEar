@@ -23,10 +23,10 @@ class NativeWindowBridge with NativaErrorLogger {
   ///
   /// Returns true if the function succeeds; false if it fails.
   /// Note: A window cannot be destroyed if it was created by another thread.
-  bool destroyWindow(int hwnd) {
+  bool destroyWindow(HWND hwnd) {
     final result = DestroyWindow(hwnd);
-    log("destroyWindow");
-    return result != 0;
+    log("destroyWindow", result);
+    return result.value;
   }
 
   /// [SetForegroundWindow].
@@ -36,24 +36,27 @@ class NativeWindowBridge with NativaErrorLogger {
   /// [hwnd] A handle to the window.
   ///
   /// Returns true if the window was successfully brought to the foreground.
-  bool setForegroundWindow(int hwnd) {
+  bool setForegroundWindow(HWND hwnd) {
     final result = SetForegroundWindow(hwnd);
-    log("setForegroundWindow");
-    return result != 0;
+    log("setForegroundWindow", NativeError.getSuccessWin32Result(result));
+    return result;
   }
 
   /// [ShowWindow].
   ///
   /// Sets the specified window's show state.
   ///
-  /// [hwnd] A handle to the window.<br>
-  /// [nCmdShow] Controls how the window is to be shown (e.g., SW_SHOW, SW_HIDE).<br>
+  /// [hwnd] A handle to the window.
   ///
-  /// Returns a non-zero value if the window was previously visible.
-  /// Returns zero if the window was previously hidden.
+  /// [nCmdShow] Controls how the window is to be shown (e.g., SW_SHOW, SW_HIDE).
+  ///
+  /// Returns true if the window was previously visible, otherwise false.
+  ///
   /// Note: The return value does not indicate success or failure of the command.
-  int showWindow(int hwnd, int nCmdShow) {
-    return ShowWindow(hwnd, nCmdShow);
+  bool showWindow(HWND hwnd, SHOW_WINDOW_CMD nCmdShow) {
+    final result = ShowWindow(hwnd, nCmdShow);
+    log("showWindow", NativeError.getSuccessWin32Result(result));
+    return result;
   }
 
   /// [UpdateWindow].
@@ -64,10 +67,10 @@ class NativeWindowBridge with NativaErrorLogger {
   /// [hwnd] A handle to the window to be updated.<br>
   ///
   /// Returns true if the function succeeds; otherwise false.
-  bool updateWindow(int hwnd) {
+  bool updateWindow(HWND hwnd) {
     final result = UpdateWindow(hwnd);
-    log("updateWindow");
-    return result != 0;
+    log("updateWindow", NativeError.getSuccessWin32Result(result));
+    return result;
   }
 
   /// [IsWindowVisible].
@@ -78,30 +81,32 @@ class NativeWindowBridge with NativaErrorLogger {
   ///
   /// Returns true if the specified window has WS_VISIBLE, not minimized, not
   /// cloaked. Otherwise false.
-  bool isWindowVisible(int hwnd) {
-    // Check WS_VISIBLE first
-    if (IsWindowVisible(hwnd) == 0) return false;
-    // Check WS_MINIMIZE
-    if (IsIconic(hwnd) != 0) return false;
+  bool isWindowVisible(HWND hwnd) {
+    // Check WS_VISIBLE & WS_MINIMIZE
+    if (!IsWindowVisible(hwnd) || IsIconic(hwnd)) {
+      log("isWindowVisible", NativeError.getSuccessWin32Result(false));
+      return false;
+    }
 
     // Check Cloaked (e.g. virtual desktop, UWP app)
     final cloakedPtr = calloc<Int32>();
     try {
-      final hr = DwmGetWindowAttribute(
+      DwmGetWindowAttribute(
         hwnd,
         DWMWA_CLOAKED,
         cloakedPtr.cast<Void>(),
         sizeOf<Int32>(),
       );
 
-      if (hr == S_OK) {
-        // If it's Cloaked (value is not zero), return false
-        if (cloakedPtr.value != 0) return false;
-      }
+      // If it's Cloaked (value is not zero), return false
+      if (cloakedPtr.value != 0) return false;
+    } on WindowsException catch (e) {
+      log("isWindowVisible", NativeError.getExceptionWin32Result(e));
     } finally {
       free(cloakedPtr);
     }
 
+    log("isWindowVisible", NativeError.getSuccessWin32Result(true));
     return true;
   }
 
@@ -111,21 +116,30 @@ class NativeWindowBridge with NativaErrorLogger {
   /// hwnd: The handle of the window.<br>
   /// shouldTopmost: true if the window should be topmost, false otherwise.<br>
   /// isSuccess: true if the window was successfully toggled, false otherwise.
-  ({int hwnd, bool shouldTopmost, bool isSuccess})
+  ({HWND hwnd, bool shouldTopmost, bool isSuccess})
   toggleUnderCursorWindowTopmost() {
     final hwnd = getUnderCursorWindowHandle();
 
-    if (hwnd == 0) {
-      return (hwnd: 0, shouldTopmost: false, isSuccess: false);
+    if (hwnd.isNull) {
+      log(
+        "toggleUnderCursorWindowTopmost",
+        NativeError.getSuccessWin32Result(HWND_NULL),
+      );
+      return (hwnd: HWND_NULL, shouldTopmost: false, isSuccess: false);
     }
 
     final result = toggleTopmost(hwnd);
-
-    return (
+    final value = (
       hwnd: hwnd,
       shouldTopmost: result.shouldTopmost,
       isSuccess: result.isSuccess,
     );
+
+    log(
+      "toggleUnderCursorWindowTopmost",
+      NativeError.getSuccessWin32Result(value),
+    );
+    return value;
   }
 
   /// Toggles foreground window topmost.
@@ -134,32 +148,45 @@ class NativeWindowBridge with NativaErrorLogger {
   /// hwnd: The handle of the window.<br>
   /// shouldTopmost: true if the window should be topmost, false otherwise.<br>
   /// isSuccess: true if the window was successfully toggled, false otherwise.
-  ({int hwnd, bool shouldTopmost, bool isSuccess})
+  ({HWND hwnd, bool shouldTopmost, bool isSuccess})
   toggleForegroundWindowTopmost() {
     final hwnd = getForegroundWindowHandle();
 
-    if (hwnd == 0) {
-      return (hwnd: 0, shouldTopmost: false, isSuccess: false);
+    if (hwnd.isNull) {
+      final value = (hwnd: HWND_NULL, shouldTopmost: false, isSuccess: false);
+      log(
+        "toggleForegroundWindowTopmost",
+        NativeError.getSuccessWin32Result(value),
+      );
+      return value;
     }
 
     final result = toggleTopmost(hwnd);
-
-    return (
+    final value = (
       hwnd: hwnd,
       shouldTopmost: result.shouldTopmost,
       isSuccess: result.isSuccess,
     );
+
+    log(
+      "toggleForegroundWindowTopmost",
+      NativeError.getSuccessWin32Result(value),
+    );
+    return value;
   }
 
   /// Toggles Topmost.
   /// Returns ([shouldTopmost], [isSuccess]).<br>
   /// [shouldTopmost]: true if the window should be topmost, false otherwise.<br>
   /// [isSuccess]: true if the window was successfully toggled, false otherwise.
-  ({bool shouldTopmost, bool isSuccess}) toggleTopmost(int hwnd) {
+  ({bool shouldTopmost, bool isSuccess}) toggleTopmost(HWND hwnd) {
     final shouldTopmost = !isTopmost(hwnd);
     final isSuccess = setTopmost(hwnd, shouldTopmost);
 
-    return (shouldTopmost: shouldTopmost, isSuccess: isSuccess);
+    final value = (shouldTopmost: shouldTopmost, isSuccess: isSuccess);
+    log("toggleTopmost", NativeError.getSuccessWin32Result(value));
+
+    return value;
   }
 
   /// Sets or cancel the topmost state of a window.
@@ -167,26 +194,24 @@ class NativeWindowBridge with NativaErrorLogger {
   /// Returns true if the window was successfully set or canceled as topmost.
   ///
   /// Note: To ensure system's response, this will bring the window to foreground whether or not set to topmost.
-  bool setTopmost(int hwnd, [bool topmost = true]) {
+  bool setTopmost(HWND hwnd, [bool topmost = true]) {
     final insertAfter = topmost ? HWND_TOPMOST : HWND_NOTOPMOST;
     final flags = SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE;
 
     setForegroundWindow(hwnd);
     final result = SetWindowPos(hwnd, insertAfter, 0, 0, 0, 0, flags);
 
-    if (result == 0) {
-      log("setTopmost");
-      return false;
-    }
-
-    return true;
+    log("setTopmost", result);
+    return result.value;
   }
 
   /// Returns true if the window is topmost.
-  bool isTopmost(int hwnd) {
+  bool isTopmost(HWND hwnd) {
     final exStyle = GetWindowLongPtr(hwnd, GWL_EXSTYLE);
+    final value = (exStyle.value & WS_EX_TOPMOST) == WS_EX_TOPMOST;
 
-    return (exStyle & WS_EX_TOPMOST) == WS_EX_TOPMOST;
+    log("isTopmost", Win32Result(value: value, error: exStyle.error));
+    return value;
   }
 
   /// Gets the handle of the top-level window located at the current mouse position.
@@ -194,24 +219,33 @@ class NativeWindowBridge with NativaErrorLogger {
   /// Only the root window is returned.
   ///
   /// Returns 0 if no window is found or if the cursor position cannot be retrieved.
-  int getUnderCursorWindowHandle() {
+  HWND getUnderCursorWindowHandle() {
     // Allocate memory for the POINT structure to store coordinates
     final pPoint = calloc<POINT>();
 
     try {
       // Get the current cursor position in screen coordinates
       final result = GetCursorPos(pPoint);
-      if (result == 0) {
+      if (!result.value) {
         // Return 0 if failed
-        log("getUnderCursorWindowHandle");
-        return 0;
+        log(
+          "getUnderCursorWindowHandle",
+          Win32Result(value: HWND_NULL, error: result.error),
+        );
+        return HWND_NULL;
       }
 
       // Identify the window at the specified point
       // WindowFromPoint may return a child window (e.g., a button or a text area)
       final hwndPoint = WindowFromPoint(pPoint.ref);
 
-      if (hwndPoint == 0) return 0;
+      if (hwndPoint.isNull) {
+        log(
+          "getUnderCursorWindowHandle",
+          NativeError.getSuccessWin32Result(hwndPoint),
+        );
+        return hwndPoint;
+      }
 
       return getRootWindowHandle(hwndPoint);
     } finally {
@@ -224,9 +258,12 @@ class NativeWindowBridge with NativaErrorLogger {
   /// Only the root window is returned.
   ///
   /// Returns 0 if no window is active.
-  int getForegroundWindowHandle() {
+  HWND getForegroundWindowHandle() {
     final hwnd = GetForegroundWindow();
-    if (hwnd == 0) return 0;
+    if (hwnd.isNull) {
+      log("getForegroundWindowHandle", NativeError.getSuccessWin32Result(hwnd));
+      return hwnd;
+    }
 
     return getRootWindowHandle(hwnd);
   }
@@ -234,22 +271,23 @@ class NativeWindowBridge with NativaErrorLogger {
   /// Gets the root window handle of a window.
   ///
   /// Returns the root window handle of the window handle passed in.
-  int getRootWindowHandle(int hwnd) {
+  HWND getRootWindowHandle(HWND hwnd) {
     var candidate = hwnd;
 
     final root = GetAncestor(candidate, GA_ROOT);
-    if (root != 0) candidate = root;
+    if (root.isNotNull) candidate = root;
 
     final rootOwner = GetAncestor(candidate, GA_ROOTOWNER);
-    if (rootOwner != 0) candidate = rootOwner;
+    if (rootOwner.isNotNull) candidate = rootOwner;
 
+    log("getRootWindowHandle", NativeError.getSuccessWin32Result(candidate));
     return candidate;
   }
 
   /// Gets the process name of a window.
   ///
   /// Returns the process name if successful, otherwise null.
-  String? getProcessName(int hwnd) {
+  String? getProcessName(HWND hwnd) {
     String processName = '';
 
     final processIdPtr = calloc<Uint32>();
@@ -258,18 +296,25 @@ class NativeWindowBridge with NativaErrorLogger {
       GetWindowThreadProcessId(hwnd, processIdPtr);
       final pid = processIdPtr.value;
 
-      if (pid == 0) return null;
+      if (pid == 0) {
+        log("getProcessName", NativeError.noneResult);
+        return null;
+      }
 
       // Open process to query information
       // PROCESS_QUERY_INFORMATION: Allow query information
       // PROCESS_VM_READ: Allow read memory (for some old APIs, it's required))
-      final hProcess = OpenProcess(
+      final hProcessResult = OpenProcess(
         PROCESS_QUERY_INFORMATION | PROCESS_VM_READ,
-        FALSE,
+        false,
         pid,
       );
+      final hProcess = hProcessResult.value;
 
-      if (hProcess == 0) return null;
+      if (!hProcess.isValid) {
+        log("getProcessName", NativeError.noneResult);
+        return null;
+      }
 
       try {
         // buffer to store process name
@@ -278,55 +323,63 @@ class NativeWindowBridge with NativaErrorLogger {
         try {
           // Get process module base name (e.g., "notepad.exe")
           // hModule: 0 (NULL) refers to the executable itself
-          final result = GetModuleBaseName(hProcess, 0, buffer, MAX_PATH);
+          final result = GetModuleBaseName(
+            hProcess,
+            null,
+            PWSTR(buffer),
+            MAX_PATH,
+          );
 
-          if (result > 0) {
+          if (result.value > 0) {
             processName = buffer.toDartString();
           }
         } finally {
           free(buffer);
         }
       } finally {
-        CloseHandle(hProcess);
+        hProcess.close();
       }
     } finally {
-      log("getProcessName");
       free(processIdPtr);
     }
 
-    return processName.isEmpty ? null : processName;
+    if (processName.isEmpty) {
+      log("getProcessName", NativeError.noneResult);
+      return null;
+    } else {
+      log("getProcessName", NativeError.getSuccessWin32Result(processName));
+      return processName;
+    }
   }
 
   /// Gets Rectangle area of window.
   /// Use DwmGetWindowAttribute to get visual accessible area (excluded shadow).
   /// If failed, fall back to GetWindowRect.
-  math.Rectangle<int>? getWindowRect(int hwnd) {
+  math.Rectangle<int>? getWindowRect(HWND hwnd) {
     final rect = calloc<RECT>();
     try {
       // Try DwmGetWindowAttribute for extended frame bounds (excludes shadow)
       try {
         // DWMWA_EXTENDED_FRAME_BOUNDS = 9
-        final result = DwmGetWindowAttribute(
+        DwmGetWindowAttribute(
           hwnd,
           DWMWA_EXTENDED_FRAME_BOUNDS,
           rect,
           sizeOf<RECT>(),
         );
-        if (result == S_OK) {
-          return math.Rectangle<int>(
-            rect.ref.left,
-            rect.ref.top,
-            rect.ref.right - rect.ref.left,
-            rect.ref.bottom - rect.ref.top,
-          );
-        }
-      } catch (e) {
-        // Ignore DWM errors
+        return math.Rectangle<int>(
+          rect.ref.left,
+          rect.ref.top,
+          rect.ref.right - rect.ref.left,
+          rect.ref.bottom - rect.ref.top,
+        );
+      } on WindowsException catch (e) {
+        log("getWindowRect", NativeError.getExceptionWin32Result(e));
       }
 
       // Fallback to GetWindowRect
       final result = GetWindowRect(hwnd, rect);
-      if (result != 0) {
+      if (result.value) {
         return math.Rectangle<int>(
           rect.ref.left,
           rect.ref.top,
@@ -336,7 +389,6 @@ class NativeWindowBridge with NativaErrorLogger {
       }
       return null;
     } finally {
-      log("getWindowRect");
       free(rect);
     }
   }
@@ -353,17 +405,16 @@ class NativeWindowBridge with NativaErrorLogger {
   ///
   /// Returns true if the function succeeds; otherwise returns false.
   bool setWindowPos(
-    int hwnd,
-    int hwndInsertAfter,
+    HWND hwnd,
+    HWND hwndInsertAfter,
     int x,
     int y,
     int cx,
     int cy,
-    int uFlags,
+    SET_WINDOW_POS_FLAGS uFlags,
   ) {
     final result = SetWindowPos(hwnd, hwndInsertAfter, x, y, cx, cy, uFlags);
-    log("setWindowPos");
-    return result != 0;
+    return result.value;
   }
 
   /// Creates a native Win32 Region handle (HRGN) from Dart points.
@@ -372,7 +423,7 @@ class NativeWindowBridge with NativaErrorLogger {
   ///
   /// Note: The returned handle ownership is usually transferred to the
   /// window when used with [SetWindowRgn].
-  int createPolygonRgn(List<math.Point<int>> points) {
+  HRGN createPolygonRgn(List<math.Point<int>> points) {
     final lpPoints = calloc<POINT>(points.length);
     try {
       for (var i = 0; i < points.length; i++) {
@@ -380,9 +431,12 @@ class NativeWindowBridge with NativaErrorLogger {
         lpPoints[i].y = points[i].y;
       }
 
-      return CreatePolygonRgn(lpPoints, points.length, WINDING);
+      final value = HRGN(
+        Pointer.fromAddress(CreatePolygonRgn(lpPoints, points.length, WINDING)),
+      );
+      log("createPolygonRgn", NativeError.getSuccessWin32Result(value));
+      return value;
     } finally {
-      log("createPolygonRgn");
       free(lpPoints);
     }
   }
@@ -405,15 +459,16 @@ class NativeWindowBridge with NativaErrorLogger {
   /// Do not make further function calls with this region handle, and do not delete it.
   ///
   /// Will automatically delete the region handle if the function fails, so don't call [DeleteObject] manually.
-  bool setWindowRgn(int hwnd, int hRgn, bool bRedraw) {
-    final result = SetWindowRgn(hwnd, hRgn, bRedraw ? TRUE : FALSE);
+  bool setWindowRgn(HWND hwnd, HRGN hRgn, bool bRedraw) {
+    final result = SetWindowRgn(hwnd, hRgn, bRedraw);
 
     if (result == 0) {
-      DeleteObject(hRgn);
-      log("setWindowRgn");
+      hRgn.close();
+      log("setWindowRgn", NativeError.noneResult);
       return false;
     }
 
+    log("setWindowRgn", NativeError.getSuccessWin32Result(true));
     return true;
   }
 
@@ -431,10 +486,10 @@ class NativeWindowBridge with NativaErrorLogger {
   /// If false, the background remains unchanged, and you just draw over it.<br>
   ///
   /// Returns true if the function succeeds; otherwise false.
-  bool invalidateRect(int hwnd, Pointer<RECT> lpRect, bool bErase) {
-    final result = InvalidateRect(hwnd, lpRect, bErase ? TRUE : FALSE);
-    log("invalidateRect");
-    return result != 0;
+  bool invalidateRect(HWND hwnd, Pointer<RECT> lpRect, bool bErase) {
+    final result = InvalidateRect(hwnd, lpRect, bErase);
+    log("invalidateRect", NativeError.getSuccessWin32Result(result));
+    return result;
   }
 
   /// [SetClassLongPtr].
@@ -449,15 +504,20 @@ class NativeWindowBridge with NativaErrorLogger {
   /// Returns the previous value of the specified offset. If the previous value is 0
   /// and the function succeeds, the return value is 0, but GetLastError will still be 0.
   /// Returns 0 on failure.
-  int setClassLongPtr(int hwnd, int nIndex, int dwNewLong) {
+  int setClassLongPtr(HWND hwnd, GET_CLASS_LONG_INDEX nIndex, int dwNewLong) {
     final result = SetClassLongPtr(hwnd, nIndex, dwNewLong);
-    log("setClassLongPtr");
-    return result;
+    log("setClassLongPtr", result);
+    return result.value;
   }
 
   /// Sets the window owner by setting the GWLP_HWNDPARENT window property.
-  void setWindowOwner(int childHwnd, int ownerHwnd) {
-    SetWindowLongPtr(childHwnd, GWLP_HWNDPARENT, ownerHwnd);
+  void setWindowOwner(HWND childHwnd, HWND ownerHwnd) {
+    final result = SetWindowLongPtr(
+      childHwnd,
+      GWLP_HWNDPARENT,
+      ownerHwnd.address,
+    );
+    log("setWindowOwner", result);
   }
 
   /// [SetLayeredWindowAttributes].
@@ -473,14 +533,14 @@ class NativeWindowBridge with NativaErrorLogger {
   ///
   /// Returns true if successful; otherwise, returns false.
   bool setLayeredWindowAttributes(
-    int hwnd,
-    int crKey,
+    HWND hwnd,
+    COLORREF crKey,
     int bAlpha,
-    int dwFlags,
+    LAYERED_WINDOW_ATTRIBUTES_FLAGS dwFlags,
   ) {
     final result = SetLayeredWindowAttributes(hwnd, crKey, bAlpha, dwFlags);
-    log("setLayeredWindowAttributes");
-    return result != 0;
+    log("setLayeredWindowAttributes", result);
+    return result.value;
   }
 
   /// [CreateWindowEx].
@@ -500,27 +560,27 @@ class NativeWindowBridge with NativaErrorLogger {
   /// ensures memory is freed after the native call.
   ///
   /// Returns the window handle (hwnd) if successful; otherwise, returns 0.
-  int createWindowEx(
-    int dwExStyle,
+  HWND createWindowEx(
+    WINDOW_EX_STYLE dwExStyle,
     String lpClassName,
     String lpWindowName,
-    int dwStyle,
+    WINDOW_STYLE dwStyle,
     int x,
     int y,
     int nWidth,
     int nHeight,
-    int hWndParent,
-    int hMenu,
-    int hInstance,
+    HWND hWndParent,
+    HMENU hMenu,
+    HINSTANCE hInstance,
     Pointer<Void> lpParam,
   ) {
     final className = lpClassName.toNativeUtf16();
     final windowName = lpWindowName.toNativeUtf16();
     try {
-      return CreateWindowEx(
+      final result = CreateWindowEx(
         dwExStyle,
-        className,
-        windowName,
+        PCWSTR(className),
+        PCWSTR(windowName),
         dwStyle,
         x,
         y,
@@ -531,8 +591,9 @@ class NativeWindowBridge with NativaErrorLogger {
         hInstance,
         lpParam,
       );
+      log("createWindowEx", result);
+      return result.value;
     } finally {
-      log("createWindowEx");
       free(className);
       free(windowName);
     }
@@ -542,15 +603,20 @@ class NativeWindowBridge with NativaErrorLogger {
   /// [lpModuleName] is the name of the module to be retrieved.
   /// If [lpModuleName] is null, the handle of the calling module
   /// (current dart process) is returned.
-  int getModuleHandle(String? lpModuleName) {
-    if (lpModuleName == null) return GetModuleHandle(nullptr);
+  HMODULE getModuleHandle(String? lpModuleName) {
+    if (lpModuleName == null) {
+      final result = GetModuleHandle(PCWSTR(nullptr));
+      log("getModuleHandle", result);
+      return result.value;
+    }
 
     final name = lpModuleName.toNativeUtf16();
 
     try {
-      return GetModuleHandle(name);
+      final result = GetModuleHandle(PCWSTR(name));
+      log("getModuleHandle", result);
+      return result.value;
     } finally {
-      log("getModuleHandle");
       free(name);
     }
   }
@@ -587,7 +653,7 @@ class NativeWindowBridge with NativaErrorLogger {
       idThread,
       dwFlags,
     );
-    log("setWinEventHook");
+    log("setWinEventHook", NativeError.getSuccessWin32Result(result));
     return result;
   }
 
@@ -598,9 +664,9 @@ class NativeWindowBridge with NativaErrorLogger {
   ///
   /// Returns true if successful; otherwise, returns false.
   bool unhookWinEvent(int hWinEventHook) {
-    final result = UnhookWinEvent(hWinEventHook);
-    log("unhookWinEvent");
-    return result != 0;
+    final result = UnhookWinEvent(hWinEventHook) != 0;
+    log("unhookWinEvent", NativeError.getSuccessWin32Result(result));
+    return result;
   }
 
   /// Registers a window class, used to call [CreateWindowEx] (with
@@ -613,9 +679,10 @@ class NativeWindowBridge with NativaErrorLogger {
     final ptr = calloc<WNDCLASS>();
     try {
       ptr.ref = lpWndClass;
-      return RegisterClass(ptr);
+      final result = RegisterClass(ptr);
+      log("registerClass", result);
+      return result.value;
     } finally {
-      log("registerClass");
       free(ptr);
     }
   }
@@ -628,12 +695,13 @@ class NativeWindowBridge with NativaErrorLogger {
   /// [hInstance] is the handle to the module that created the class.<br>
   ///
   /// Returns true if successful; otherwise, returns false.
-  bool unregisterClass(String lpClassName, int hInstance) {
+  bool unregisterClass(String lpClassName, HINSTANCE hInstance) {
     final className = lpClassName.toNativeUtf16();
     try {
-      return UnregisterClass(className, hInstance) != 0;
+      final result = UnregisterClass(PCWSTR(className), hInstance);
+      log("unregisterClass", result);
+      return result.value;
     } finally {
-      log("unregisterClass");
       free(className);
     }
   }
@@ -645,18 +713,22 @@ class NativeWindowBridge with NativaErrorLogger {
   /// [hwnd] is the handle to the window whose class name is to be retrieved.
   ///
   /// Returns the window class name if successful; otherwise null.
-  String? getClassName(int hwnd) {
+  String? getClassName(HWND hwnd) {
     final maxCount = 256;
     final buffer = calloc<Uint16>(maxCount).cast<Utf16>();
 
     try {
-      final result = GetClassName(hwnd, buffer, maxCount);
+      final result = GetClassName(hwnd, PWSTR(buffer), maxCount);
 
-      if (result == 0) return null;
+      if (result.value == 0) {
+        log("getClassName", NativeError.noneResult);
+        return null;
+      }
 
-      return buffer.toDartString();
+      final value = buffer.toDartString();
+      log("getClassName", NativeError.getSuccessWin32Result(value));
+      return value;
     } finally {
-      log("getClassName");
       free(buffer);
     }
   }

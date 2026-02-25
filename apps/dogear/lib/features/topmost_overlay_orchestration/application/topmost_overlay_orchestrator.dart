@@ -1,10 +1,12 @@
 import 'dart:ui' show Color;
 
-import 'package:dogear/services/services.dart';
 import 'package:path/path.dart' as p;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:win32/win32.dart';
 
+import '../../../services/platform/native_overlay_orchestrator.dart';
 import '../../../services/platform/native_privilege_manager.dart';
+import '../../../services/platform/native_window_bridge.dart';
 import '../domain/topmost_overlay_orchestrator_state.dart';
 
 part 'topmost_overlay_orchestrator.g.dart';
@@ -38,7 +40,7 @@ class TopmostOverlayOrchestrator extends _$TopmostOverlayOrchestrator {
 
     if (result.shouldTopmost) {
       final overlayHwnd = nativeOverlayOrchestrator.addTarget(result.hwnd);
-      if (overlayHwnd == null) return;
+      if (overlayHwnd.isNull) return;
 
       final processName = nativeWindowBridge.getProcessName(result.hwnd);
 
@@ -54,7 +56,7 @@ class TopmostOverlayOrchestrator extends _$TopmostOverlayOrchestrator {
       nativeOverlayOrchestrator.removeTarget(result.hwnd);
       _removefromState(result.hwnd);
 
-      if (curForeWindowHwnd != 0) {
+      if (curForeWindowHwnd.isNotNull) {
         nativeWindowBridge.setForegroundWindow(curForeWindowHwnd);
       }
     }
@@ -71,14 +73,14 @@ class TopmostOverlayOrchestrator extends _$TopmostOverlayOrchestrator {
     );
   }
 
-  void _removefromState(int hwnd) {
+  void _handleNativeWindowDestroyed(HWND hwnd) {
+    _removefromState(hwnd);
+  }
+
+  void _removefromState(HWND hwnd) {
     final newList = List<TopmostWindow>.from(state.topmostWindows)
       ..removeWhere((w) => w.hwnd == hwnd);
     state = state.copyWith(topmostWindows: newList);
-  }
-
-  void _handleNativeWindowDestroyed(int hwnd) {
-    _removefromState(hwnd);
   }
 
   void dispose() {
